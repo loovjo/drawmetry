@@ -1,0 +1,7 @@
+[package]
+name = "desometry"
+version = "0.1.0"
+authors = ["loovjo <jonathan.loov@gmail.com>"]
+
+[dependencies]
+quickcheck = "0.6"
