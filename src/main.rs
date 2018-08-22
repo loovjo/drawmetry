@@ -1,9 +1,14 @@
+extern crate sdl2;
+
 #[cfg(test)]
 #[macro_use]
 extern crate quickcheck;
 
+mod graphics;
+mod transform;
 mod backend;
 use backend::geometry;
+
 
 fn main() {
     let mut world = geometry::Geometry::new();
@@ -63,12 +68,7 @@ fn main() {
         geometry::Position::PrimIntersection(ci_o, li_v),
     ));
 
-    let mut keys = world.objects.keys().collect::<Vec<_>>();
-    keys.sort();
 
-    for id in keys {
-        if let Some(ro) = world.resolve_object(*id) {
-            println!("{}", ro.as_eq());
-        }
-    }
+    let mut window = graphics::DWindow::new(world);
+    window.start();
 }
