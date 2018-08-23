@@ -4,70 +4,37 @@ extern crate sdl2;
 #[macro_use]
 extern crate quickcheck;
 
+mod backend;
 mod graphics;
 mod transform;
-mod backend;
 use backend::geometry;
-
 
 fn main() {
     let mut world = geometry::Geometry::new();
-    let po_o = world.add_object(geometry::Object::Point(geometry::Position::Arbitrary(
-        0., 0.,
-    )));
-    let po_1 = world.add_object(geometry::Object::Point(geometry::Position::Arbitrary(
-        1., 0.,
-    )));
 
-    let ci_o = world.add_object(geometry::Object::Circle(
-        geometry::Position::AtPoint(po_o),
-        geometry::Position::AtPoint(po_1),
-    ));
+    let po_o = world.add_point(geometry::Point::Arbitrary((0., 0.)));
+    let po_1_0 = world.add_point(geometry::Point::Arbitrary((1., 0.)));
 
-    let li_o_1 = world.add_object(geometry::Object::Line(
-        geometry::Position::AtPoint(po_o),
-        geometry::Position::AtPoint(po_1),
-    ));
+    let li_0 = world.add_shape(geometry::Shape::Line(po_o, po_1_0));
+    let ci_o = world.add_shape(geometry::Shape::Circle(po_o, po_1_0));
 
-    let po_n1 = world.add_object(geometry::Object::Point(
-        geometry::Position::SecIntersection(ci_o, li_o_1),
-    ));
+    let po_n1_0 = world.add_point(geometry::Point::SecIntersection(li_0, ci_o));
 
-    let ci_1 = world.add_object(geometry::Object::Circle(
-        geometry::Position::AtPoint(po_1),
-        geometry::Position::AtPoint(po_n1),
-    ));
+    let ci_1_0 = world.add_shape(geometry::Shape::Circle(po_1_0, po_n1_0));
+    let ci_n1_0 = world.add_shape(geometry::Shape::Circle(po_n1_0, po_1_0));
 
-    let ci_n1 = world.add_object(geometry::Object::Circle(
-        geometry::Position::AtPoint(po_n1),
-        geometry::Position::AtPoint(po_1),
-    ));
+    let po_y_0 = world.add_point(geometry::Point::PrimIntersection(ci_1_0, ci_n1_0));
+    let po_y_1 = world.add_point(geometry::Point::SecIntersection(ci_1_0, ci_n1_0));
 
-    let li_v = world.add_object(geometry::Object::Line(
-        geometry::Position::PrimIntersection(ci_1, ci_n1),
-        geometry::Position::SecIntersection(ci_1, ci_n1),
-    ));
+    let li_y = world.add_shape(geometry::Shape::Line(po_y_0, po_y_1));
 
-    world.add_object(geometry::Object::Line(
-        geometry::Position::PrimIntersection(ci_o, li_v),
-        geometry::Position::AtPoint(po_1),
-    ));
+    let po_0_1 = world.add_point(geometry::Point::PrimIntersection(li_y, ci_o));
+    let po_0_n1 = world.add_point(geometry::Point::SecIntersection(li_y, ci_o));
 
-    world.add_object(geometry::Object::Line(
-        geometry::Position::AtPoint(po_1),
-        geometry::Position::SecIntersection(ci_o, li_v),
-    ));
-
-    world.add_object(geometry::Object::Line(
-        geometry::Position::SecIntersection(ci_o, li_v),
-        geometry::Position::AtPoint(po_n1),
-    ));
-
-    world.add_object(geometry::Object::Line(
-        geometry::Position::AtPoint(po_n1),
-        geometry::Position::PrimIntersection(ci_o, li_v),
-    ));
-
+    world.add_shape(geometry::Shape::Line(po_0_n1, po_1_0));
+    world.add_shape(geometry::Shape::Line(po_1_0, po_0_1));
+    world.add_shape(geometry::Shape::Line(po_0_1, po_n1_0));
+    world.add_shape(geometry::Shape::Line(po_n1_0, po_0_n1));
 
     let mut window = graphics::DWindow::new(world);
     window.start();

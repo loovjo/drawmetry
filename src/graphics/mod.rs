@@ -1,8 +1,8 @@
 extern crate sdl2;
 
+use std::f64::consts::PI;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
-use std::f64::consts::PI;
 
 use super::backend::geometry;
 use super::transform::Transform;
@@ -67,17 +67,17 @@ impl DWindow {
         self.canvas.set_draw_color(Color::RGBA(255, 255, 255, 255));
         self.canvas.clear();
 
+        self.canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
         let (w, h) = self.canvas.window().size();
 
-        self.canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
-        for id in self.world.objects.keys() {
-            if let Some(ro) = self.world.resolve_object(*id) {
+        for id in self.world.shapes.keys() {
+            if let Some(ro) = self.world.resolve_shape(*id) {
                 match ro {
-                    geometry::RealObject::Circle(center, rad) => {
+                    geometry::ResolvedShape::Circle(center, rad) => {
                         let center_px = self.transform.transform_po_to_px(center);
                         draw_circle(&mut self.canvas, center_px, rad * self.transform.scale);
                     }
-                    geometry::RealObject::Line(k, m) => {
+                    geometry::ResolvedShape::Line(k, m) => {
                         let start_x = self.transform.transform_px_to_po((0., 0.)).0;
                         let start_y = k * start_x + m;
                         let start_point = (start_x, start_y);
@@ -94,19 +94,22 @@ impl DWindow {
                             Point::new(end_px.0 as i32, end_px.1 as i32),
                         );
                     }
-                    geometry::RealObject::LineUp(x) => {
+                    geometry::ResolvedShape::LineUp(x) => {
                         let x_px = self.transform.transform_po_to_px((x, 0.)).0;
                         self.canvas.draw_line(
                             Point::new(x_px as i32, 0),
                             Point::new(x_px as i32, h as i32),
                         );
                     }
-                    geometry::RealObject::Point(p) => {
-                        let p_px = self.transform.transform_po_to_px(p);
-
-                        fill_circle(&mut self.canvas, p_px, 5.);
-                    }
                 }
+            }
+        }
+
+        for pid in self.world.points.keys() {
+            if let Some(point) = self.world.resolve_point(*pid) {
+                let p_px = self.transform.transform_po_to_px(point);
+
+                fill_circle(&mut self.canvas, p_px, 5.);
             }
         }
 
@@ -123,6 +126,9 @@ impl DWindow {
                         keycode: Some(Keycode::Escape),
                         ..
                     } => return false,
+                    //Event::KeyDown { keycode: Some(Keycode::L), .. } => {
+                    //self.placing = Some(Placing::Line(self.get_closest()));
+                    //}
                     Event::KeyDown {
                         keycode: Some(Keycode::Space),
                         ..
@@ -192,7 +198,7 @@ fn draw_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) {
 fn draw_circle_points((x, y): (f64, f64), r: f64) -> Vec<Point> {
     let mut points = Vec::with_capacity(CIRCLE_STEP);
 
-    for i in 0..CIRCLE_STEP+1 {
+    for i in 0..CIRCLE_STEP + 1 {
         let theta = (i as f64 / CIRCLE_STEP as f64) * 2. * PI;
         let (x_, y_) = (x + r * theta.cos(), y + r * theta.sin());
         points.push(Point::new(x_ as i32, y_ as i32));
