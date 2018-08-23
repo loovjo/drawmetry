@@ -132,8 +132,50 @@ impl Geometry {
         }
     }
 
-    pub fn resolve_point(&self, id: PointID) -> Option<(f64, f64)> {
-        let point = self.points.get(&id)?;
+    pub fn get_potential_points(&self) -> Vec<Point> {
+        let mut points = Vec::new();
+        for s1 in self.shapes.keys() {
+            for s2 in self.shapes.keys() {
+                if s1 == s2 {
+                    continue;
+                }
+                for p in &[
+                    Point::PrimIntersection(*s1, *s2),
+                    Point::SecIntersection(*s1, *s2),
+                ] {
+                    if self.resolve_point(p).is_some() && !self
+                        .points
+                        .values()
+                        .any(|x| self.resolve_point(x) == self.resolve_point(p))
+                    {
+                        points.push(*p);
+                    }
+                }
+            }
+        }
+        points
+    }
+
+    pub fn get_closest_point(&self, to: (f64, f64)) -> Option<(Point, f64)> {
+        let points = self.get_potential_points();
+        let mut best: Option<(Point, f64)> = None;
+        for point in points {
+            if let Some(pos) = self.resolve_point(&point) {
+                let (dx, dy) = (to.0 - pos.0, to.1 - pos.1);
+                let dist = dx * dx + dy * dy;
+                if let Some((_, dist_)) = best {
+                    if dist < dist_ {
+                        best = Some((point, dist));
+                    }
+                } else {
+                    best = Some((point, dist));
+                }
+            }
+        }
+        best
+    }
+
+    pub fn resolve_point(&self, point: &Point) -> Option<(f64, f64)> {
         match point {
             Point::Arbitrary(pos) => Some(*pos),
             Point::PrimIntersection(a, b) | Point::SecIntersection(a, b) => {
@@ -143,10 +185,10 @@ impl Geometry {
                 let intersection = match (obj_a, obj_b) {
                     (Shape::Circle(cent1_pos, circ1_pos), Shape::Circle(cent2_pos, circ2_pos)) => {
                         let (cent1, circ1, cent2, circ2) = (
-                            self.resolve_point(*cent1_pos)?,
-                            self.resolve_point(*circ1_pos)?,
-                            self.resolve_point(*cent2_pos)?,
-                            self.resolve_point(*circ2_pos)?,
+                            self.resolve_point(self.points.get(cent1_pos)?)?,
+                            self.resolve_point(self.points.get(circ1_pos)?)?,
+                            self.resolve_point(self.points.get(cent2_pos)?)?,
+                            self.resolve_point(self.points.get(circ2_pos)?)?,
                         );
 
                         let rad1_sq = (cent1.0 - circ1.0) * (cent1.0 - circ1.0)
@@ -162,10 +204,10 @@ impl Geometry {
                     (Shape::Circle(cent1_pos, circ1_pos), Shape::Line(point1_pos, point2_pos))
                     | (Shape::Line(point1_pos, point2_pos), Shape::Circle(cent1_pos, circ1_pos)) => {
                         let (cent1, circ1, point1, point2) = (
-                            self.resolve_point(*cent1_pos)?,
-                            self.resolve_point(*circ1_pos)?,
-                            self.resolve_point(*point1_pos)?,
-                            self.resolve_point(*point2_pos)?,
+                            self.resolve_point(self.points.get(cent1_pos)?)?,
+                            self.resolve_point(self.points.get(circ1_pos)?)?,
+                            self.resolve_point(self.points.get(point1_pos)?)?,
+                            self.resolve_point(self.points.get(point2_pos)?)?,
                         );
 
                         let rad1_sq = (cent1.0 - circ1.0) * (cent1.0 - circ1.0)
@@ -176,10 +218,10 @@ impl Geometry {
                     }
                     (Shape::Line(point1_pos, point2_pos), Shape::Line(point3_pos, point4_pos)) => {
                         let (point1, point2, point3, point4) = (
-                            self.resolve_point(*point1_pos)?,
-                            self.resolve_point(*point2_pos)?,
-                            self.resolve_point(*point3_pos)?,
-                            self.resolve_point(*point4_pos)?,
+                            self.resolve_point(self.points.get(point1_pos)?)?,
+                            self.resolve_point(self.points.get(point2_pos)?)?,
+                            self.resolve_point(self.points.get(point3_pos)?)?,
+                            self.resolve_point(self.points.get(point4_pos)?)?,
                         );
                         intersect_line_line(point1, point2, point3, point4)
                     }
@@ -196,12 +238,12 @@ impl Geometry {
         }
     }
 
-    pub fn resolve_shape(&self, id: ShapeID) -> Option<ResolvedShape> {
-        match self.shapes.get(&id)? {
+    pub fn resolve_shape(&self, shape: &Shape) -> Option<ResolvedShape> {
+        match shape {
             Shape::Circle(center_pos, cpoint_pos) => {
                 let (center, cpoint) = (
-                    self.resolve_point(*center_pos)?,
-                    self.resolve_point(*cpoint_pos)?,
+                    self.resolve_point(self.points.get(center_pos)?)?,
+                    self.resolve_point(self.points.get(cpoint_pos)?)?,
                 );
                 let rad_sq = (center.0 - cpoint.0) * (center.0 - cpoint.0)
                     + (center.1 - cpoint.1) * (center.1 - cpoint.1);
@@ -209,7 +251,10 @@ impl Geometry {
                 Some(ResolvedShape::Circle(center, rad))
             }
             Shape::Line(p1_pos, p2_pos) => {
-                let (p1, p2) = (self.resolve_point(*p1_pos)?, self.resolve_point(*p2_pos)?);
+                let (p1, p2) = (
+                    self.resolve_point(self.points.get(p1_pos)?)?,
+                    self.resolve_point(self.points.get(p2_pos)?)?,
+                );
                 if p1.0 == p2.0 {
                     return Some(ResolvedShape::LineUp(p1.0));
                 }

@@ -9,6 +9,7 @@ use super::transform::Transform;
 
 use self::sdl2::event::Event;
 use self::sdl2::keyboard::Keycode;
+use self::sdl2::mouse::MouseButton;
 use self::sdl2::pixels::Color;
 use self::sdl2::rect::Point;
 use self::sdl2::render::Canvas;
@@ -70,8 +71,8 @@ impl DWindow {
         self.canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
         let (w, h) = self.canvas.window().size();
 
-        for id in self.world.shapes.keys() {
-            if let Some(ro) = self.world.resolve_shape(*id) {
+        for obj in self.world.shapes.values() {
+            if let Some(ro) = self.world.resolve_shape(obj) {
                 match ro {
                     geometry::ResolvedShape::Circle(center, rad) => {
                         let center_px = self.transform.transform_po_to_px(center);
@@ -105,9 +106,9 @@ impl DWindow {
             }
         }
 
-        for pid in self.world.points.keys() {
-            if let Some(point) = self.world.resolve_point(*pid) {
-                let p_px = self.transform.transform_po_to_px(point);
+        for point in self.world.points.values() {
+            if let Some(rpoint) = self.world.resolve_point(point) {
+                let p_px = self.transform.transform_po_to_px(rpoint);
 
                 fill_circle(&mut self.canvas, p_px, 5.);
             }
@@ -117,63 +118,78 @@ impl DWindow {
     }
 
     fn process_events(&mut self) -> bool {
-        let dt = if let Some(ref mut tm) = self.time_manager {
-            let dt = tm.dt();
-            for event in self.event_pump.poll_iter() {
-                match event {
-                    Event::Quit { .. }
-                    | Event::KeyDown {
-                        keycode: Some(Keycode::Escape),
-                        ..
-                    } => return false,
-                    //Event::KeyDown { keycode: Some(Keycode::L), .. } => {
-                    //self.placing = Some(Placing::Line(self.get_closest()));
-                    //}
-                    Event::KeyDown {
-                        keycode: Some(Keycode::Space),
-                        ..
-                    } => {
-                        self.moving_screen = true;
-                    }
-                    Event::KeyUp {
-                        keycode: Some(Keycode::Space),
-                        ..
-                    } => {
-                        self.moving_screen = false;
-                    }
-                    Event::MouseMotion { x, y, .. } => {
-                        if self.moving_screen {
-                            let (dx, dy) = (x - self.mouse_last.x, y - self.mouse_last.y);
-                            let (dtx, dty) = (
-                                dx as f64 / self.transform.scale,
-                                dy as f64 / self.transform.scale,
-                            );
+        for event in self.event_pump.poll_iter() {
+            match event {
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
+                    ..
+                } => return false,
+                //Event::KeyDown { keycode: Some(Keycode::L), .. } => {
+                //self.placing = Some(Placing::Line(self.get_closest()));
+                //}
+                Event::MouseButtonDown {
+                    x,
+                    y,
+                    mouse_btn: MouseButton::Left,
+                    ..
+                } => {
+                    let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
 
-                            self.transform.translation = (
-                                self.transform.translation.0 + dtx as f64,
-                                self.transform.translation.1 + dty as f64,
-                            );
+                    if let Some((best, dist)) = self.world.get_closest_point(mouse_po) {
+                        if self.transform.scale * dist.sqrt() > 100. {
+                            self.world.add_point(geometry::Point::Arbitrary(mouse_po));
+                        } else {
+                            self.world.add_point(best);
                         }
-                        self.mouse_last = Point::new(x, y);
                     }
-                    Event::MouseWheel { y, .. } => {
-                        self.scrolling += -y as f64 / 300.;
-                    }
-                    _ => {}
                 }
-            }
+                Event::KeyDown {
+                    keycode: Some(Keycode::Space),
+                    ..
+                } => {
+                    self.moving_screen = true;
+                }
+                Event::KeyUp {
+                    keycode: Some(Keycode::Space),
+                    ..
+                } => {
+                    self.moving_screen = false;
+                }
+                Event::MouseMotion { x, y, .. } => {
+                    if self.moving_screen {
+                        let (dx, dy) = (x - self.mouse_last.x, y - self.mouse_last.y);
+                        let (dtx, dty) = (
+                            dx as f64 / self.transform.scale,
+                            dy as f64 / self.transform.scale,
+                        );
 
-            dt
-        } else {
-            self.time_manager = Some(TimeManager::new());
-            0.
-        };
-        self.update(dt);
+                        self.transform.translation = (
+                            self.transform.translation.0 + dtx as f64,
+                            self.transform.translation.1 + dty as f64,
+                        );
+                    }
+                    self.mouse_last = Point::new(x, y);
+                }
+                Event::MouseWheel { y, .. } => {
+                    self.scrolling += -y as f64 / 300.;
+                }
+                _ => {}
+            }
+        }
 
         true
     }
 
-    pub fn update(&mut self, dt: f64) {
+    pub fn update(&mut self) {
+        let dt = if let Some(ref mut tm) = self.time_manager {
+            let dt = tm.dt();
+            dt
+        } else {
+            self.time_manager = Some(TimeManager::new());
+            return;
+        };
+
         self.scrolling = self.scrolling * (0.1_f64).powf(dt);
         self.transform.scale *= (0.1_f64).powf(self.scrolling);
     }
@@ -182,6 +198,7 @@ impl DWindow {
         loop {
             self.tick += 1;
             self.draw();
+            self.update();
             if !self.process_events() {
                 break;
             }
