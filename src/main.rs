@@ -7,6 +7,7 @@ extern crate quickcheck;
 mod backend;
 mod graphics;
 mod transform;
+mod window;
 use backend::geometry;
 
 fn main() {
@@ -36,6 +37,8 @@ fn main() {
     world.add_shape(geometry::Shape::Line(po_0_1, po_n1_0));
     world.add_shape(geometry::Shape::Line(po_n1_0, po_0_n1));
 
-    let mut window = graphics::DWindow::new(world);
-    window.start();
+    let window = graphics::DWindow::new(world);
+    let mut container = window::WindowContainer::new(window);
+
+    container.start();
 }
