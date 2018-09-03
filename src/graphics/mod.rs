@@ -37,6 +37,7 @@ pub enum Tool {
     Point,
     Line(LineState),
     Circle(CircleState),
+    Mover(MoverState),
 }
 
 #[derive(Clone)]
@@ -49,6 +50,12 @@ pub enum LineState {
 pub enum CircleState {
     Nothing,
     Centered(geometry::PointID),
+}
+
+#[derive(Clone)]
+pub enum MoverState {
+    Nothing,
+    Moving(geometry::PointID),
 }
 
 impl DWindow {
@@ -110,6 +117,12 @@ impl DWindow {
             if let Some(rpoint) = self.world.resolve_point(point) {
                 let p_px = self.transform.transform_po_to_px(rpoint);
 
+                canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
+                if let Tool::Mover(_) = self.tool {
+                    if let geometry::Point::Arbitrary(_) = point {
+                        canvas.set_draw_color(Color::RGBA(0, 0, 255, 255));
+                    }
+                }
                 fill_circle(canvas, p_px, 5.);
             }
         }
@@ -148,6 +161,12 @@ impl DWindow {
             } => {
                 self.tool = Tool::Point;
             }
+            Event::KeyDown {
+                keycode: Some(Keycode::M),
+                ..
+            } => {
+                self.tool = Tool::Mover(MoverState::Nothing);
+            }
             Event::MouseButtonDown {
                 x,
                 y,
@@ -176,6 +195,13 @@ impl DWindow {
                         ) {
                             match self.tool {
                                 Tool::Point => unreachable!(),
+                                Tool::Mover(_) => {
+                                    if let Some(geometry::Point::Arbitrary(_)) =
+                                        self.world.points.get(&id)
+                                    {
+                                        self.tool = Tool::Mover(MoverState::Moving(id));
+                                    }
+                                }
                                 Tool::Line(LineState::Nothing) => {
                                     self.tool = Tool::Line(LineState::OnePoint(id));
                                 }
@@ -195,6 +221,12 @@ impl DWindow {
                     }
                 }
             }
+            Event::MouseButtonUp { .. } => match self.tool {
+                Tool::Mover(MoverState::Moving(_)) => {
+                    self.tool = Tool::Mover(MoverState::Nothing);
+                }
+                _ => {}
+            },
             Event::KeyDown {
                 keycode: Some(Keycode::Space),
                 ..
@@ -219,6 +251,13 @@ impl DWindow {
                         self.transform.translation.0 + dtx as f64,
                         self.transform.translation.1 + dty as f64,
                     );
+                }
+                if let Tool::Mover(MoverState::Moving(id)) = self.tool {
+                    let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
+
+                    if let Some(point) = self.world.points.get_mut(&id) {
+                        *point = geometry::Point::Arbitrary(mouse_po);
+                    }
                 }
                 self.mouse_last = Point::new(x, y);
             }
