@@ -27,19 +27,31 @@ pub struct DWindow {
     pub mouse_last: Point,
     pub moving_screen: bool,
     pub scrolling: f64,
+    pub tool: Tool,
 
     time_manager: Option<TimeManager>,
+}
+
+pub enum Tool {
+    Point,
+    Line(LineState),
+}
+
+pub enum LineState {
+    Nothing,
+    OnePoint(geometry::PointID),
 }
 
 impl DWindow {
     pub fn new(world: geometry::Geometry) -> DWindow {
         DWindow {
             world,
-            time_manager: None,
             transform: Transform::new_from_winsize((SIZE.0 as f64, SIZE.1 as f64)),
             mouse_last: Point::new(0, 0),
             moving_screen: false,
             scrolling: 0.,
+            tool: Tool::Point,
+            time_manager: None,
         }
     }
 
@@ -103,9 +115,18 @@ impl DWindow {
                 keycode: Some(Keycode::Escape),
                 ..
             } => return false,
-            //Event::KeyDown { keycode: Some(Keycode::L), .. } => {
-            //self.placing = Some(Placing::Line(self.get_closest()));
-            //}
+            Event::KeyDown {
+                keycode: Some(Keycode::L),
+                ..
+            } => {
+                self.tool = Tool::Line(LineState::Nothing);
+            }
+            Event::KeyDown {
+                keycode: Some(Keycode::P),
+                ..
+            } => {
+                self.tool = Tool::Point;
+            }
             Event::MouseButtonDown {
                 x,
                 y,
@@ -113,14 +134,40 @@ impl DWindow {
                 ..
             } => {
                 let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
-                let point = get_closest(
-                    mouse_po,
-                    self.world.get_potential_points(),
-                    |point| self.world.resolve_point(point).unwrap_or((0., 0.)),
-                    Some(100. / self.transform.scale),
-                ).unwrap_or(geometry::Point::Arbitrary(mouse_po));
 
-                self.world.add_point(point);
+                match self.tool {
+                    Tool::Point => {
+                        let point = get_closest(
+                            mouse_po,
+                            self.world.get_potential_points(),
+                            |point| self.world.resolve_point(point).unwrap_or((0., 0.)),
+                            Some(100. / self.transform.scale),
+                        ).unwrap_or(geometry::Point::Arbitrary(mouse_po));
+
+                        self.world.add_point(point);
+                    }
+                    Tool::Line(LineState::Nothing) => {
+                        if let Some((&id, _)) = get_closest(
+                            mouse_po,
+                            self.world.points.iter().collect(),
+                            |(_, point)| self.world.resolve_point(point).unwrap_or((0., 0.)),
+                            Some(100. / self.transform.scale),
+                        ) {
+                            self.tool = Tool::Line(LineState::OnePoint(id));
+                        }
+                    }
+                    Tool::Line(LineState::OnePoint(id)) => {
+                        if let Some((&id1, _)) = get_closest(
+                            mouse_po,
+                            self.world.points.iter().collect(),
+                            |(_, point)| self.world.resolve_point(point).unwrap_or((0., 0.)),
+                            Some(100. / self.transform.scale),
+                        ) {
+                            self.world.add_shape(geometry::Shape::Line(id, id1));
+                            self.tool = Tool::Line(LineState::Nothing);
+                        }
+                    }
+                }
             }
             Event::KeyDown {
                 keycode: Some(Keycode::Space),
