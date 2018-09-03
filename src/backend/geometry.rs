@@ -156,25 +156,6 @@ impl Geometry {
         points
     }
 
-    pub fn get_closest_point(&self, to: (f64, f64)) -> Option<(Point, f64)> {
-        let points = self.get_potential_points();
-        let mut best: Option<(Point, f64)> = None;
-        for point in points {
-            if let Some(pos) = self.resolve_point(&point) {
-                let (dx, dy) = (to.0 - pos.0, to.1 - pos.1);
-                let dist = dx * dx + dy * dy;
-                if let Some((_, dist_)) = best {
-                    if dist < dist_ {
-                        best = Some((point, dist));
-                    }
-                } else {
-                    best = Some((point, dist));
-                }
-            }
-        }
-        best
-    }
-
     pub fn resolve_point(&self, point: &Point) -> Option<(f64, f64)> {
         match point {
             Point::Arbitrary(pos) => Some(*pos),

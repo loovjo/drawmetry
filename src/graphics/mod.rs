@@ -113,14 +113,14 @@ impl DWindow {
                 ..
             } => {
                 let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
+                let point = get_closest(
+                    mouse_po,
+                    self.world.get_potential_points(),
+                    |point| self.world.resolve_point(point).unwrap_or((0., 0.)),
+                    Some(100. / self.transform.scale),
+                ).unwrap_or(geometry::Point::Arbitrary(mouse_po));
 
-                if let Some((best, dist)) = self.world.get_closest_point(mouse_po) {
-                    if self.transform.scale * dist.sqrt() > 100. {
-                        self.world.add_point(geometry::Point::Arbitrary(mouse_po));
-                    } else {
-                        self.world.add_point(best);
-                    }
-                }
+                self.world.add_point(point);
             }
             Event::KeyDown {
                 keycode: Some(Keycode::Space),
@@ -170,7 +170,6 @@ impl DWindow {
         self.scrolling = self.scrolling * (0.1_f64).powf(dt);
         self.transform.scale *= (0.1_f64).powf(self.scrolling);
     }
-
 }
 
 fn draw_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) {
@@ -239,4 +238,32 @@ impl TimeManager {
 
         diff.as_secs() as f64 + diff.subsec_millis() as f64 / 1000.
     }
+}
+
+fn get_closest<T, F: Fn(&T) -> (f64, f64)>(
+    to: (f64, f64),
+    objs: Vec<T>,
+    f: F,
+    max: Option<f64>,
+) -> Option<T> {
+    let mut best: Option<(f64, T)> = None;
+    for obj in objs {
+        let pos = f(&obj);
+
+        let (dx, dy) = (pos.0 - to.0, pos.1 - to.1);
+        let dist_sq = dx * dx + dy * dy;
+
+        if max.map(|x| dist_sq > x * x).unwrap_or(false) {
+            continue;
+        }
+        if let Some((cur_dist, _)) = best {
+            if dist_sq < cur_dist {
+                best = Some((dist_sq, obj));
+            }
+        } else {
+            best = Some((dist_sq, obj));
+        }
+    }
+
+    best.map(|x| x.1)
 }
