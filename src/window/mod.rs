@@ -28,7 +28,7 @@ impl WindowContainer {
             .unwrap();
 
         let canvas = main_window.into_canvas().build().unwrap();
-        let mut event_pump = sdl_context.event_pump().unwrap();
+        let event_pump = sdl_context.event_pump().unwrap();
 
         WindowContainer {
             canvas,
@@ -39,7 +39,10 @@ impl WindowContainer {
 
     pub fn start(&mut self) {
         'outer: loop {
-            self.inner.draw(&mut self.canvas);
+            if let Err(e) = self.inner.draw(&mut self.canvas) {
+                eprintln!("Drawing error: {}", e);
+                break;
+            }
             self.inner.update();
             for event in self.event_pump.poll_iter() {
                 if !self.inner.process_event(event) {

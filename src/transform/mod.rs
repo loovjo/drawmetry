@@ -8,14 +8,6 @@ pub struct Transform {
 }
 
 impl Transform {
-    pub fn new(win_size: (f64, f64), scale: f64, (x, y): (f64, f64)) -> Transform {
-        Transform {
-            win_size,
-            scale,
-            translation: (x, y),
-        }
-    }
-
     pub fn new_from_winsize((width, height): (f64, f64)) -> Transform {
         Transform {
             win_size: (width, height),

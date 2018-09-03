@@ -13,7 +13,6 @@ use self::sdl2::pixels::Color;
 use self::sdl2::rect::Point;
 use self::sdl2::render::Canvas;
 use self::sdl2::video::Window;
-use self::sdl2::EventPump;
 
 pub const SIZE: (usize, usize) = (1200, 800);
 const FPS_PRINT_RATE: Duration = Duration::from_millis(1000);
@@ -71,7 +70,7 @@ impl DWindow {
         }
     }
 
-    pub fn draw(&mut self, canvas: &mut Canvas<Window>) {
+    pub fn draw(&mut self, canvas: &mut Canvas<Window>) -> Result<(), String> {
         canvas.set_draw_color(Color::RGBA(255, 255, 255, 255));
         canvas.clear();
 
@@ -83,7 +82,7 @@ impl DWindow {
                 match ro {
                     geometry::ResolvedShape::Circle(center, rad) => {
                         let center_px = self.transform.transform_po_to_px(center);
-                        draw_circle(canvas, center_px, rad * self.transform.scale);
+                        draw_circle(canvas, center_px, rad * self.transform.scale)?;
                     }
                     geometry::ResolvedShape::Line(k, m) => {
                         let start_x = self.transform.transform_px_to_po((0., 0.)).0;
@@ -100,14 +99,14 @@ impl DWindow {
                         canvas.draw_line(
                             Point::new(start_px.0 as i32, start_px.1 as i32),
                             Point::new(end_px.0 as i32, end_px.1 as i32),
-                        );
+                        )?;
                     }
                     geometry::ResolvedShape::LineUp(x) => {
                         let x_px = self.transform.transform_po_to_px((x, 0.)).0;
                         canvas.draw_line(
                             Point::new(x_px as i32, 0),
                             Point::new(x_px as i32, h as i32),
-                        );
+                        )?;
                     }
                 }
             }
@@ -123,11 +122,13 @@ impl DWindow {
                         canvas.set_draw_color(Color::RGBA(0, 0, 255, 255));
                     }
                 }
-                fill_circle(canvas, p_px, 5.);
+                fill_circle(canvas, p_px, 5.)?;
             }
         }
 
         canvas.present();
+
+        Ok(())
     }
 
     pub fn process_event(&mut self, event: Event) -> bool {
@@ -284,8 +285,8 @@ impl DWindow {
     }
 }
 
-fn draw_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) {
-    canvas.draw_lines(&*draw_circle_points(pos, r));
+fn draw_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) -> Result<(), String> {
+    canvas.draw_lines(&*draw_circle_points(pos, r))
 }
 
 fn draw_circle_points((x, y): (f64, f64), r: f64) -> Vec<Point> {
@@ -299,8 +300,8 @@ fn draw_circle_points((x, y): (f64, f64), r: f64) -> Vec<Point> {
     points
 }
 
-fn fill_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) {
-    canvas.draw_lines(&*fill_circle_points(pos, r));
+fn fill_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) -> Result<(), String> {
+    canvas.draw_lines(&*fill_circle_points(pos, r))
 }
 
 fn fill_circle_points((x, y): (f64, f64), r: f64) -> Vec<Point> {

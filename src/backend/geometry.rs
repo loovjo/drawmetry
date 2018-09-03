@@ -47,6 +47,7 @@ pub enum ResolvedShape {
 }
 
 impl ResolvedShape {
+    #[allow(unused)]
     pub fn as_eq(&self) -> String {
         match self {
             ResolvedShape::Circle((cx, cy), r) => {
@@ -206,7 +207,6 @@ impl Geometry {
                         );
                         intersect_line_line(point1, point2, point3, point4)
                     }
-                    _ => IntersectionResult::None,
                 };
 
                 match (point, intersection) {
