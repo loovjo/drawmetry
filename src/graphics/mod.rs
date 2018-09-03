@@ -32,14 +32,23 @@ pub struct DWindow {
     time_manager: Option<TimeManager>,
 }
 
+#[derive(Clone)]
 pub enum Tool {
     Point,
     Line(LineState),
+    Circle(CircleState),
 }
 
+#[derive(Clone)]
 pub enum LineState {
     Nothing,
     OnePoint(geometry::PointID),
+}
+
+#[derive(Clone)]
+pub enum CircleState {
+    Nothing,
+    Centered(geometry::PointID),
 }
 
 impl DWindow {
@@ -110,16 +119,28 @@ impl DWindow {
 
     pub fn process_event(&mut self, event: Event) -> bool {
         match event {
-            Event::Quit { .. }
-            | Event::KeyDown {
+            Event::Quit { .. } => return false,
+            Event::KeyDown {
                 keycode: Some(Keycode::Escape),
                 ..
-            } => return false,
+            } => {
+                self.tool = match self.tool.clone() {
+                    Tool::Line(LineState::OnePoint(_)) => Tool::Line(LineState::Nothing),
+                    Tool::Circle(CircleState::Centered(_)) => Tool::Circle(CircleState::Nothing),
+                    x => x,
+                };
+            }
             Event::KeyDown {
                 keycode: Some(Keycode::L),
                 ..
             } => {
                 self.tool = Tool::Line(LineState::Nothing);
+            }
+            Event::KeyDown {
+                keycode: Some(Keycode::C),
+                ..
+            } => {
+                self.tool = Tool::Circle(CircleState::Nothing);
             }
             Event::KeyDown {
                 keycode: Some(Keycode::P),
@@ -146,25 +167,30 @@ impl DWindow {
 
                         self.world.add_point(point);
                     }
-                    Tool::Line(LineState::Nothing) => {
+                    _ => {
                         if let Some((&id, _)) = get_closest(
                             mouse_po,
                             self.world.points.iter().collect(),
                             |(_, point)| self.world.resolve_point(point).unwrap_or((0., 0.)),
                             Some(100. / self.transform.scale),
                         ) {
-                            self.tool = Tool::Line(LineState::OnePoint(id));
-                        }
-                    }
-                    Tool::Line(LineState::OnePoint(id)) => {
-                        if let Some((&id1, _)) = get_closest(
-                            mouse_po,
-                            self.world.points.iter().collect(),
-                            |(_, point)| self.world.resolve_point(point).unwrap_or((0., 0.)),
-                            Some(100. / self.transform.scale),
-                        ) {
-                            self.world.add_shape(geometry::Shape::Line(id, id1));
-                            self.tool = Tool::Line(LineState::Nothing);
+                            match self.tool {
+                                Tool::Point => unreachable!(),
+                                Tool::Line(LineState::Nothing) => {
+                                    self.tool = Tool::Line(LineState::OnePoint(id));
+                                }
+                                Tool::Line(LineState::OnePoint(id1)) => {
+                                    self.world.add_shape(geometry::Shape::Line(id, id1));
+                                    self.tool = Tool::Line(LineState::Nothing);
+                                }
+                                Tool::Circle(CircleState::Nothing) => {
+                                    self.tool = Tool::Circle(CircleState::Centered(id));
+                                }
+                                Tool::Circle(CircleState::Centered(cent)) => {
+                                    self.world.add_shape(geometry::Shape::Circle(cent, id));
+                                    self.tool = Tool::Circle(CircleState::Nothing);
+                                }
+                            }
                         }
                     }
                 }
