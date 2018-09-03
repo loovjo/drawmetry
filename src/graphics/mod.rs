@@ -18,6 +18,7 @@ use self::sdl2::video::Window;
 pub const SIZE: (usize, usize) = (1200, 800);
 const FPS_PRINT_RATE: Duration = Duration::from_millis(1000);
 const CIRCLE_STEP: usize = 100;
+const TOOL_EDGE: u32 = 2;
 
 lazy_static! {
     static ref TOOLS: Vec<(ToolKind, PngImage)> = vec![
@@ -26,6 +27,27 @@ lazy_static! {
         (ToolKind::Circle, icons::TOOL_CIRCLE.clone()),
         (ToolKind::Mover, icons::TOOL_MOVER.clone()),
     ];
+    static ref TOOL_RECTS: Vec<Rect> = {
+        let mut x = TOOL_EDGE as i32;
+
+        let mut res = Vec::with_capacity(TOOLS.len());
+        for (_, image) in TOOLS.iter() {
+            res.push(Rect::new(
+                x,
+                TOOL_EDGE as i32,
+                image.width as u32,
+                image.height as u32,
+            ));
+            x += image.width as i32 + 10;
+        }
+
+        res
+    };
+    static ref TOOL_HEIGHT: usize = TOOLS
+        .iter()
+        .map(|(_, image)| image.width)
+        .max()
+        .unwrap_or(0);
 }
 
 pub struct DWindow {
@@ -73,7 +95,10 @@ impl DWindow {
             mouse_last: Point::new(0, 0),
             moving_screen: false,
             scrolling: 0.,
-            tool: Tool { kind: ToolKind::Point, selected: Vec::new() },
+            tool: Tool {
+                kind: ToolKind::Point,
+                selected: Vec::new(),
+            },
             time_manager: None,
         }
     }
@@ -145,20 +170,31 @@ impl DWindow {
     }
 
     fn draw_menu(&mut self, canvas: &mut Canvas<Window>) -> Result<(), String> {
-        let y_edge = 2;
-        let mut x = y_edge;
-        for (tool, image) in TOOLS.iter() {
+        let width = canvas.window().size().0;
+
+        canvas.set_draw_color(Color::RGBA(38, 62, 99, 255));
+        canvas.fill_rect(Rect::new(0, 0, width, *TOOL_HEIGHT as u32 + TOOL_EDGE * 2))?;
+        canvas.set_draw_color(Color::RGBA(162, 184, 219, 255));
+        canvas.fill_rect(Rect::new(
+            TOOL_EDGE as i32,
+            TOOL_EDGE as i32,
+            width - TOOL_EDGE * 2,
+            *TOOL_HEIGHT as u32,
+        ))?;
+
+        for (rect, (tool, image)) in TOOL_RECTS.iter().zip(TOOLS.iter()) {
             if &self.tool.kind == tool {
                 canvas.set_draw_color(Color::RGBA(140, 120, 100, 255));
-                canvas.fill_rect(Rect::new(x, y_edge, image.width as u32, image.height as u32))?;
+                canvas.fill_rect(*rect)?;
                 canvas.set_draw_color(Color::RGBA(245, 230, 230, 255));
-                canvas.fill_rect(Rect::new(x + 2, y_edge + 2, image.width as u32 - 4, image.height as u32 - 4))?;
-            } else {
-                canvas.set_draw_color(Color::RGBA(255, 255, 255, 255));
-                canvas.fill_rect(Rect::new(x, y_edge, image.width as u32, image.height as u32))?;
+                canvas.fill_rect(Rect::new(
+                    rect.x() + 2,
+                    rect.y() + 2,
+                    rect.width() as u32 - 4,
+                    rect.height() as u32 - 4,
+                ))?;
             }
-            image.draw(canvas, Point::new(x, y_edge))?;
-            x += image.width as i32 + 10;
+            image.draw(canvas, Point::new(rect.x(), rect.y()))?;
         }
         Ok(())
     }
@@ -202,54 +238,52 @@ impl DWindow {
                 mouse_btn: MouseButton::Left,
                 ..
             } => {
-                let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
-
-                let mut ix = 0;
-                for (tool, image) in TOOLS.iter() {
-                    if x > ix && x < ix + image.width as i32 && y < image.height as i32 {
-                        self.tool.kind = tool.clone();
-                        self.tool.selected.clear();
-                        return true;
+                if y < *TOOL_HEIGHT as i32 {
+                    for (rect, (tool, _)) in TOOL_RECTS.iter().zip(TOOLS.iter()) {
+                        if rect.contains_point(Point::new(x, y)) {
+                            self.tool.kind = tool.clone();
+                            self.tool.selected.clear();
+                        }
                     }
-                    ix += image.width as i32 + 10;
-                }
+                } else {
+                    let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
+                    match self.tool.kind {
+                        ToolKind::Point => {
+                            let point = get_closest(
+                                mouse_po,
+                                self.world.get_potential_points(),
+                                |point| self.world.resolve_point(point).unwrap_or((0., 0.)),
+                                Some(100. / self.transform.scale),
+                            ).unwrap_or(geometry::Point::Arbitrary(mouse_po));
 
-                match self.tool.kind {
-                    ToolKind::Point => {
-                        let point = get_closest(
-                            mouse_po,
-                            self.world.get_potential_points(),
-                            |point| self.world.resolve_point(point).unwrap_or((0., 0.)),
-                            Some(100. / self.transform.scale),
-                        ).unwrap_or(geometry::Point::Arbitrary(mouse_po));
-
-                        self.world.add_point(point);
-                    }
-                    _ => {
-                        if let Some((&id, _)) = get_closest(
-                            mouse_po,
-                            self.world.points.iter().collect(),
-                            |(_, point)| self.world.resolve_point(point).unwrap_or((0., 0.)),
-                            Some(100. / self.transform.scale),
-                        ) {
-                            self.tool.selected.push(id);
-                            if self.tool.selected.len() >= self.tool.kind.needed_selected() {
-                                match self.tool.kind {
-                                    ToolKind::Line => {
-                                        self.world.add_shape(geometry::Shape::Line(
-                                            self.tool.selected[0],
-                                            self.tool.selected[1],
-                                        ));
-                                        self.tool.selected.clear();
+                            self.world.add_point(point);
+                        }
+                        _ => {
+                            if let Some((&id, _)) = get_closest(
+                                mouse_po,
+                                self.world.points.iter().collect(),
+                                |(_, point)| self.world.resolve_point(point).unwrap_or((0., 0.)),
+                                Some(100. / self.transform.scale),
+                            ) {
+                                self.tool.selected.push(id);
+                                if self.tool.selected.len() >= self.tool.kind.needed_selected() {
+                                    match self.tool.kind {
+                                        ToolKind::Line => {
+                                            self.world.add_shape(geometry::Shape::Line(
+                                                self.tool.selected[0],
+                                                self.tool.selected[1],
+                                            ));
+                                            self.tool.selected.clear();
+                                        }
+                                        ToolKind::Circle => {
+                                            self.world.add_shape(geometry::Shape::Circle(
+                                                self.tool.selected[0],
+                                                self.tool.selected[1],
+                                            ));
+                                            self.tool.selected.clear();
+                                        }
+                                        _ => {}
                                     }
-                                    ToolKind::Circle => {
-                                        self.world.add_shape(geometry::Shape::Circle(
-                                            self.tool.selected[0],
-                                            self.tool.selected[1],
-                                        ));
-                                        self.tool.selected.clear();
-                                    }
-                                    _ => {}
                                 }
                             }
                         }
