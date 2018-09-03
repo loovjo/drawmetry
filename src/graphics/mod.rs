@@ -4,19 +4,29 @@ use std::f64::consts::PI;
 use std::time::{Duration, Instant};
 
 use super::backend::geometry;
+use super::image::{icons, png_loader::PngImage};
 use super::transform::Transform;
 
 use self::sdl2::event::Event;
 use self::sdl2::keyboard::Keycode;
 use self::sdl2::mouse::MouseButton;
 use self::sdl2::pixels::Color;
-use self::sdl2::rect::Point;
+use self::sdl2::rect::{Point, Rect};
 use self::sdl2::render::Canvas;
 use self::sdl2::video::Window;
 
 pub const SIZE: (usize, usize) = (1200, 800);
 const FPS_PRINT_RATE: Duration = Duration::from_millis(1000);
 const CIRCLE_STEP: usize = 100;
+
+lazy_static! {
+    static ref TOOLS: Vec<(ToolKind, PngImage)> = vec![
+        (ToolKind::Point, icons::TOOL_POINT.clone()),
+        (ToolKind::Line, icons::TOOL_LINE.clone()),
+        (ToolKind::Circle, icons::TOOL_CIRCLE.clone()),
+        (ToolKind::Mover, icons::TOOL_MOVER.clone()),
+    ];
+}
 
 pub struct DWindow {
     pub world: geometry::Geometry,
@@ -31,30 +41,28 @@ pub struct DWindow {
     time_manager: Option<TimeManager>,
 }
 
-#[derive(Clone)]
-pub enum Tool {
+pub struct Tool {
+    kind: ToolKind,
+    selected: Vec<geometry::PointID>,
+}
+
+#[derive(Clone, PartialEq)]
+pub enum ToolKind {
     Point,
-    Line(LineState),
-    Circle(CircleState),
-    Mover(MoverState),
+    Line,
+    Circle,
+    Mover,
 }
 
-#[derive(Clone)]
-pub enum LineState {
-    Nothing,
-    OnePoint(geometry::PointID),
-}
-
-#[derive(Clone)]
-pub enum CircleState {
-    Nothing,
-    Centered(geometry::PointID),
-}
-
-#[derive(Clone)]
-pub enum MoverState {
-    Nothing,
-    Moving(geometry::PointID),
+impl ToolKind {
+    fn needed_selected(&self) -> usize {
+        match self {
+            ToolKind::Point => 1,
+            ToolKind::Line => 2,
+            ToolKind::Circle => 2,
+            ToolKind::Mover => 1,
+        }
+    }
 }
 
 impl DWindow {
@@ -65,7 +73,7 @@ impl DWindow {
             mouse_last: Point::new(0, 0),
             moving_screen: false,
             scrolling: 0.,
-            tool: Tool::Point,
+            tool: Tool { kind: ToolKind::Point, selected: Vec::new() },
             time_manager: None,
         }
     }
@@ -112,22 +120,46 @@ impl DWindow {
             }
         }
 
-        for point in self.world.points.values() {
+        for (id, point) in self.world.points.iter() {
             if let Some(rpoint) = self.world.resolve_point(point) {
                 let p_px = self.transform.transform_po_to_px(rpoint);
 
                 canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
-                if let Tool::Mover(_) = self.tool {
+                if let ToolKind::Mover = self.tool.kind {
                     if let geometry::Point::Arbitrary(_) = point {
                         canvas.set_draw_color(Color::RGBA(0, 0, 255, 255));
                     }
+                }
+                if self.tool.selected.contains(id) {
+                    canvas.set_draw_color(Color::RGBA(0, 255, 0, 255));
                 }
                 fill_circle(canvas, p_px, 5.)?;
             }
         }
 
+        self.draw_menu(canvas)?;
+
         canvas.present();
 
+        Ok(())
+    }
+
+    fn draw_menu(&mut self, canvas: &mut Canvas<Window>) -> Result<(), String> {
+        let y_edge = 2;
+        let mut x = y_edge;
+        for (tool, image) in TOOLS.iter() {
+            if &self.tool.kind == tool {
+                canvas.set_draw_color(Color::RGBA(140, 120, 100, 255));
+                canvas.fill_rect(Rect::new(x, y_edge, image.width as u32, image.height as u32))?;
+                canvas.set_draw_color(Color::RGBA(245, 230, 230, 255));
+                canvas.fill_rect(Rect::new(x + 2, y_edge + 2, image.width as u32 - 4, image.height as u32 - 4))?;
+            } else {
+                canvas.set_draw_color(Color::RGBA(255, 255, 255, 255));
+                canvas.fill_rect(Rect::new(x, y_edge, image.width as u32, image.height as u32))?;
+            }
+            image.draw(canvas, Point::new(x, y_edge))?;
+            x += image.width as i32 + 10;
+        }
         Ok(())
     }
 
@@ -138,35 +170,31 @@ impl DWindow {
                 keycode: Some(Keycode::Escape),
                 ..
             } => {
-                self.tool = match self.tool.clone() {
-                    Tool::Line(LineState::OnePoint(_)) => Tool::Line(LineState::Nothing),
-                    Tool::Circle(CircleState::Centered(_)) => Tool::Circle(CircleState::Nothing),
-                    x => x,
-                };
+                self.tool.selected.clear();
             }
             Event::KeyDown {
                 keycode: Some(Keycode::L),
                 ..
             } => {
-                self.tool = Tool::Line(LineState::Nothing);
+                self.tool.kind = ToolKind::Line;
             }
             Event::KeyDown {
                 keycode: Some(Keycode::C),
                 ..
             } => {
-                self.tool = Tool::Circle(CircleState::Nothing);
+                self.tool.kind = ToolKind::Circle;
             }
             Event::KeyDown {
                 keycode: Some(Keycode::P),
                 ..
             } => {
-                self.tool = Tool::Point;
+                self.tool.kind = ToolKind::Point;
             }
             Event::KeyDown {
                 keycode: Some(Keycode::M),
                 ..
             } => {
-                self.tool = Tool::Mover(MoverState::Nothing);
+                self.tool.kind = ToolKind::Mover;
             }
             Event::MouseButtonDown {
                 x,
@@ -176,8 +204,18 @@ impl DWindow {
             } => {
                 let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
 
-                match self.tool {
-                    Tool::Point => {
+                let mut ix = 0;
+                for (tool, image) in TOOLS.iter() {
+                    if x > ix && x < ix + image.width as i32 && y < image.height as i32 {
+                        self.tool.kind = tool.clone();
+                        self.tool.selected.clear();
+                        return true;
+                    }
+                    ix += image.width as i32 + 10;
+                }
+
+                match self.tool.kind {
+                    ToolKind::Point => {
                         let point = get_closest(
                             mouse_po,
                             self.world.get_potential_points(),
@@ -194,37 +232,33 @@ impl DWindow {
                             |(_, point)| self.world.resolve_point(point).unwrap_or((0., 0.)),
                             Some(100. / self.transform.scale),
                         ) {
-                            match self.tool {
-                                Tool::Point => unreachable!(),
-                                Tool::Mover(_) => {
-                                    if let Some(geometry::Point::Arbitrary(_)) =
-                                        self.world.points.get(&id)
-                                    {
-                                        self.tool = Tool::Mover(MoverState::Moving(id));
+                            self.tool.selected.push(id);
+                            if self.tool.selected.len() >= self.tool.kind.needed_selected() {
+                                match self.tool.kind {
+                                    ToolKind::Line => {
+                                        self.world.add_shape(geometry::Shape::Line(
+                                            self.tool.selected[0],
+                                            self.tool.selected[1],
+                                        ));
+                                        self.tool.selected.clear();
                                     }
-                                }
-                                Tool::Line(LineState::Nothing) => {
-                                    self.tool = Tool::Line(LineState::OnePoint(id));
-                                }
-                                Tool::Line(LineState::OnePoint(id1)) => {
-                                    self.world.add_shape(geometry::Shape::Line(id, id1));
-                                    self.tool = Tool::Line(LineState::Nothing);
-                                }
-                                Tool::Circle(CircleState::Nothing) => {
-                                    self.tool = Tool::Circle(CircleState::Centered(id));
-                                }
-                                Tool::Circle(CircleState::Centered(cent)) => {
-                                    self.world.add_shape(geometry::Shape::Circle(cent, id));
-                                    self.tool = Tool::Circle(CircleState::Nothing);
+                                    ToolKind::Circle => {
+                                        self.world.add_shape(geometry::Shape::Circle(
+                                            self.tool.selected[0],
+                                            self.tool.selected[1],
+                                        ));
+                                        self.tool.selected.clear();
+                                    }
+                                    _ => {}
                                 }
                             }
                         }
                     }
                 }
             }
-            Event::MouseButtonUp { .. } => match self.tool {
-                Tool::Mover(MoverState::Moving(_)) => {
-                    self.tool = Tool::Mover(MoverState::Nothing);
+            Event::MouseButtonUp { .. } => match self.tool.kind {
+                ToolKind::Mover => {
+                    self.tool.selected.clear();
                 }
                 _ => {}
             },
@@ -253,11 +287,13 @@ impl DWindow {
                         self.transform.translation.1 + dty as f64,
                     );
                 }
-                if let Tool::Mover(MoverState::Moving(id)) = self.tool {
-                    let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
+                if let ToolKind::Mover = self.tool.kind {
+                    if let Some(id) = self.tool.selected.get(0) {
+                        let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
 
-                    if let Some(point) = self.world.points.get_mut(&id) {
-                        *point = geometry::Point::Arbitrary(mouse_po);
+                        if let Some(point) = self.world.points.get_mut(&id) {
+                            *point = geometry::Point::Arbitrary(mouse_po);
+                        }
                     }
                 }
                 self.mouse_last = Point::new(x, y);

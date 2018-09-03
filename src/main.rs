@@ -1,4 +1,8 @@
 extern crate sdl2;
+extern crate png;
+
+#[macro_use]
+extern crate lazy_static;
 
 #[cfg(test)]
 #[macro_use]
@@ -8,6 +12,7 @@ mod backend;
 mod graphics;
 mod transform;
 mod window;
+mod image;
 use backend::geometry;
 
 fn main() {
