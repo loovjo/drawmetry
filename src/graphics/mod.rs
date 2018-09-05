@@ -358,7 +358,7 @@ impl DWindow {
             return;
         };
 
-        self.scrolling = self.scrolling * (0.1_f64).powf(dt);
+        self.scrolling = self.scrolling * (0.01_f64).powf(dt);
         self.transform.scale *= (0.1_f64).powf(self.scrolling);
     }
 }
