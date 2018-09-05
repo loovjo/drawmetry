@@ -265,6 +265,14 @@ impl DWindow {
                                 |(_, point)| self.world.resolve_point(point).unwrap_or((0., 0.)),
                                 Some(100. / self.transform.scale),
                             ) {
+                                if self.tool.kind == ToolKind::Mover {
+                                    if let Some(geometry::Point::Arbitrary(_)) =
+                                        self.world.points.get(&id)
+                                    {
+                                    } else {
+                                        return true;
+                                    }
+                                }
                                 self.tool.selected.push(id);
                                 if self.tool.selected.len() >= self.tool.kind.needed_selected() {
                                     match self.tool.kind {
