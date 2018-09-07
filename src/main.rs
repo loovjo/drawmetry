@@ -1,5 +1,4 @@
-extern crate sdl2;
-extern crate png;
+extern crate ytesrev;
 
 #[macro_use]
 extern crate lazy_static;
@@ -10,16 +9,21 @@ extern crate quickcheck;
 
 mod backend;
 mod graphics;
+mod icons;
 mod transform;
-mod window;
-mod image;
+
 use backend::geometry;
+use ytesrev::prelude::*;
+use ytesrev::window::WSETTINGS_MAIN;
 
 fn main() {
     let world = geometry::Geometry::new();
-
     let window = graphics::DWindow::new(world);
-    let mut container = window::WindowContainer::new(window);
 
-    container.start();
+    let mut manager = WindowManager::init_window(
+        DrawableWrapper(window),
+        vec![("Drawmetry".into(), WSETTINGS_MAIN)],
+    );
+
+    manager.start();
 }

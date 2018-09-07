@@ -1,9 +1,11 @@
-use super::png_loader::PngImage;
 use std::io::Cursor;
+use ytesrev::image::PngImage;
 
 macro_rules! load_image {
     ($path:expr) => {
-        PngImage::load(Cursor::new(include_bytes!(concat!("../../resources/", $path)) as &[u8])).unwrap()
+        PngImage::load_from_path(Cursor::new(
+            include_bytes!(concat!("../../resources/", $path)) as &[u8],
+        )).unwrap()
     };
 }
 

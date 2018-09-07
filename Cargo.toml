@@ -5,6 +5,5 @@ authors = ["loovjo <jonathan.loov@gmail.com>"]
 
 [dependencies]
 quickcheck = "0.6"
-sdl2 = "0.31"
-png = "0.12.0"
+ytesrev = { path = "../ytesrev/" }
 lazy_static = "1.1.0"

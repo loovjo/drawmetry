@@ -1,19 +1,19 @@
-extern crate sdl2;
-
 use std::f64::consts::PI;
 use std::time::{Duration, Instant};
 
 use super::backend::geometry;
-use super::image::{icons, png_loader::PngImage};
+use super::icons;
 use super::transform::Transform;
 
-use self::sdl2::event::Event;
-use self::sdl2::keyboard::Keycode;
-use self::sdl2::mouse::MouseButton;
-use self::sdl2::pixels::Color;
-use self::sdl2::rect::{Point, Rect};
-use self::sdl2::render::Canvas;
-use self::sdl2::video::Window;
+use ytesrev::sdl2::event::Event;
+use ytesrev::sdl2::keyboard::Keycode;
+use ytesrev::sdl2::mouse::MouseButton;
+use ytesrev::sdl2::pixels::Color;
+use ytesrev::sdl2::rect::{Point, Rect};
+use ytesrev::sdl2::render::Canvas;
+use ytesrev::sdl2::video::Window;
+use ytesrev::drawable::{Drawable, Position, DrawSettings, State};
+use ytesrev::image::PngImage;
 
 pub const SIZE: (usize, usize) = (1200, 800);
 const FPS_PRINT_RATE: Duration = Duration::from_millis(1000);
@@ -103,72 +103,6 @@ impl DWindow {
         }
     }
 
-    pub fn draw(&mut self, canvas: &mut Canvas<Window>) -> Result<(), String> {
-        canvas.set_draw_color(Color::RGBA(255, 255, 255, 255));
-        canvas.clear();
-
-        canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
-        let (w, h) = canvas.window().size();
-
-        for obj in self.world.shapes.values() {
-            if let Some(ro) = self.world.resolve_shape(obj) {
-                match ro {
-                    geometry::ResolvedShape::Circle(center, rad) => {
-                        let center_px = self.transform.transform_po_to_px(center);
-                        draw_circle(canvas, center_px, rad * self.transform.scale)?;
-                    }
-                    geometry::ResolvedShape::Line(k, m) => {
-                        let start_x = self.transform.transform_px_to_po((0., 0.)).0;
-                        let start_y = k * start_x + m;
-                        let start_point = (start_x, start_y);
-
-                        let end_x = self.transform.transform_px_to_po((w as f64, 0.)).0;
-                        let end_y = k * end_x + m;
-                        let end_point = (end_x, end_y);
-
-                        let start_px = self.transform.transform_po_to_px(start_point);
-                        let end_px = self.transform.transform_po_to_px(end_point);
-
-                        canvas.draw_line(
-                            Point::new(start_px.0 as i32, start_px.1 as i32),
-                            Point::new(end_px.0 as i32, end_px.1 as i32),
-                        )?;
-                    }
-                    geometry::ResolvedShape::LineUp(x) => {
-                        let x_px = self.transform.transform_po_to_px((x, 0.)).0;
-                        canvas.draw_line(
-                            Point::new(x_px as i32, 0),
-                            Point::new(x_px as i32, h as i32),
-                        )?;
-                    }
-                }
-            }
-        }
-
-        for (id, point) in self.world.points.iter() {
-            if let Some(rpoint) = self.world.resolve_point(point) {
-                let p_px = self.transform.transform_po_to_px(rpoint);
-
-                canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
-                if let ToolKind::Mover = self.tool.kind {
-                    if let geometry::Point::Arbitrary(_) = point {
-                        canvas.set_draw_color(Color::RGBA(0, 0, 255, 255));
-                    }
-                }
-                if self.tool.selected.contains(id) {
-                    canvas.set_draw_color(Color::RGBA(0, 255, 0, 255));
-                }
-                fill_circle(canvas, p_px, 5.)?;
-            }
-        }
-
-        self.draw_menu(canvas)?;
-
-        canvas.present();
-
-        Ok(())
-    }
-
     fn draw_menu(&mut self, canvas: &mut Canvas<Window>) -> Result<(), String> {
         let width = canvas.window().size().0;
 
@@ -194,7 +128,7 @@ impl DWindow {
                     rect.height() as u32 - 4,
                 ))?;
             }
-            image.draw(canvas, Point::new(rect.x(), rect.y()))?;
+            //image.draw(canvas, Point::new(rect.x(), rect.y()))?;
         }
         Ok(())
     }
@@ -349,15 +283,93 @@ impl DWindow {
         true
     }
 
-    pub fn update(&mut self) {
-        let dt = if let Some(ref mut tm) = self.time_manager {
-            let dt = tm.dt();
-            dt
-        } else {
-            self.time_manager = Some(TimeManager::new());
-            return;
-        };
+    fn try_draw(&mut self, canvas: &mut Canvas<Window>) -> Result<(), String> {
+        canvas.set_draw_color(Color::RGBA(255, 255, 255, 255));
+        canvas.clear();
 
+        canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
+        let (w, h) = canvas.window().size();
+
+        for obj in self.world.shapes.values() {
+            if let Some(ro) = self.world.resolve_shape(obj) {
+                match ro {
+                    geometry::ResolvedShape::Circle(center, rad) => {
+                        let center_px = self.transform.transform_po_to_px(center);
+                        draw_circle(canvas, center_px, rad * self.transform.scale)?;
+                    }
+                    geometry::ResolvedShape::Line(k, m) => {
+                        let start_x = self.transform.transform_px_to_po((0., 0.)).0;
+                        let start_y = k * start_x + m;
+                        let start_point = (start_x, start_y);
+
+                        let end_x = self.transform.transform_px_to_po((w as f64, 0.)).0;
+                        let end_y = k * end_x + m;
+                        let end_point = (end_x, end_y);
+
+                        let start_px = self.transform.transform_po_to_px(start_point);
+                        let end_px = self.transform.transform_po_to_px(end_point);
+
+                        canvas.draw_line(
+                            Point::new(start_px.0 as i32, start_px.1 as i32),
+                            Point::new(end_px.0 as i32, end_px.1 as i32),
+                        )?;
+                    }
+                    geometry::ResolvedShape::LineUp(x) => {
+                        let x_px = self.transform.transform_po_to_px((x, 0.)).0;
+                        canvas.draw_line(
+                            Point::new(x_px as i32, 0),
+                            Point::new(x_px as i32, h as i32),
+                        )?;
+                    }
+                }
+            }
+        }
+
+        for (id, point) in self.world.points.iter() {
+            if let Some(rpoint) = self.world.resolve_point(point) {
+                let p_px = self.transform.transform_po_to_px(rpoint);
+
+                canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
+                if let ToolKind::Mover = self.tool.kind {
+                    if let geometry::Point::Arbitrary(_) = point {
+                        canvas.set_draw_color(Color::RGBA(0, 0, 255, 255));
+                    }
+                }
+                if self.tool.selected.contains(id) {
+                    canvas.set_draw_color(Color::RGBA(0, 255, 0, 255));
+                }
+                fill_circle(canvas, p_px, 5.)?;
+            }
+        }
+
+        self.draw_menu(canvas)?;
+
+        Ok(())
+    }
+}
+
+
+impl Drawable for DWindow {
+    fn content(&self) -> Vec<&Drawable> {
+        Vec::new()
+    }
+
+    fn content_mut(&mut self) -> Vec<&mut Drawable> {
+        Vec::new()
+    }
+
+    fn step(&mut self) {
+    }
+
+    fn state(&self) -> State {
+        State::Working
+    }
+
+    fn draw(&mut self, canvas: &mut Canvas<Window>, position: &Position, _: DrawSettings) {
+        self.try_draw(canvas).expect("Can't draw");
+    }
+
+    fn update(&mut self, dt: f64) {
         self.scrolling = self.scrolling * (0.01_f64).powf(dt);
         self.transform.scale *= (0.1_f64).powf(self.scrolling);
     }
