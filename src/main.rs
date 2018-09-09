@@ -8,21 +8,29 @@ extern crate lazy_static;
 extern crate quickcheck;
 
 mod backend;
+mod drawing_board;
 mod graphics;
 mod icons;
+mod toolbar;
 mod transform;
 
 use backend::geometry;
 use ytesrev::prelude::*;
-use ytesrev::window::WSETTINGS_MAIN;
+use ytesrev::window::{WindowSettings, WSETTINGS_MAIN};
 
 fn main() {
     let world = geometry::Geometry::new();
-    let window = graphics::DWindow::new(world);
+    let all = graphics::create_layout(world);
 
     let mut manager = WindowManager::init_window(
-        DrawableWrapper(window),
-        vec![("Drawmetry".into(), WSETTINGS_MAIN)],
+        DrawableWrapper(all),
+        vec![(
+            "Drawmetry".into(),
+            WindowSettings {
+                window_size: graphics::WINDOW_SIZE,
+                ..WSETTINGS_MAIN
+            },
+        )],
     );
 
     manager.start();
