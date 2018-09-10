@@ -220,8 +220,6 @@ impl Drawable for DrawingBoard {
                         dy as f64 / self.transform.scale,
                     );
 
-                    println!("Moving {} {}", dtx, dty);
-
                     self.transform.translation = (
                         self.transform.translation.0 + dtx as f64,
                         self.transform.translation.1 + dty as f64,

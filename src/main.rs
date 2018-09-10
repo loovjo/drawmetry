@@ -24,13 +24,16 @@ fn main() {
 
     let mut manager = WindowManager::init_window(
         all,
-        vec![(
-            "Drawmetry".into(),
-            WindowSettings {
-                window_size: graphics::WINDOW_SIZE,
-                ..WSETTINGS_MAIN
-            },
-        )],
+        WindowManagerSettings {
+            windows: vec![(
+                "Drawmetry".into(),
+                WindowSettings {
+                    window_size: graphics::WINDOW_SIZE,
+                    ..WSETTINGS_MAIN
+                },
+            )],
+            event_step_rule: Box::new(|_| false),
+        },
     );
 
     manager.start();
