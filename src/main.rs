@@ -23,7 +23,7 @@ fn main() {
     let all = graphics::create_layout(world);
 
     let mut manager = WindowManager::init_window(
-        DrawableWrapper(all),
+        all,
         vec![(
             "Drawmetry".into(),
             WindowSettings {

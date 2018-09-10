@@ -4,15 +4,14 @@ use std::sync::{Arc, Mutex};
 use backend::geometry;
 use drawing_board::DrawingBoard;
 use toolbar::{Tool, ToolBar, ToolKind, TOOL_HEIGHT};
-use ytesrev::image::PngImage;
+use ytesrev::drawable::{DrawSettings, Position};
 use ytesrev::prelude::*;
+use ytesrev::scene::Action;
 use ytesrev::sdl2::event::Event;
-use ytesrev::sdl2::keyboard::Keycode;
-use ytesrev::sdl2::mouse::MouseButton;
-use ytesrev::sdl2::pixels::Color;
-use ytesrev::sdl2::rect::{Point, Rect};
+use ytesrev::sdl2::rect::Point;
 use ytesrev::sdl2::render::Canvas;
 use ytesrev::sdl2::video::Window;
+use ytesrev::window::YEvent;
 
 pub const WINDOW_SIZE: (u32, u32) = (1200, 800);
 
@@ -21,7 +20,11 @@ pub struct DState {
     pub current_tool: Tool,
 }
 
-pub fn create_layout(world: geometry::Geometry) -> impl Drawable {
+pub struct DScene {
+    inner: Split<ToolBar, DrawingBoard>,
+}
+
+pub fn create_layout(world: geometry::Geometry) -> DScene {
     let state = DState {
         world: world,
         current_tool: Tool {
@@ -34,14 +37,52 @@ pub fn create_layout(world: geometry::Geometry) -> impl Drawable {
     let tool_bar = ToolBar::new(state_arc_mutex.clone());
     let drawing_board = DrawingBoard::new(state_arc_mutex.clone());
 
+    DScene {
+        inner: Split::new_const(
+            *TOOL_HEIGHT as u32,
+            Orientation::Vertical,
+            UpdateOrder::FirstSecond,
+            tool_bar,
+            drawing_board,
+        ),
+    }
+}
 
-    Split::new_const(
-        *TOOL_HEIGHT as u32,
-        Orientation::Vertical,
-        UpdateOrder::FirstSecond,
-        tool_bar,
-        drawing_board,
-    )
+impl Scene for DScene {
+    fn update(&mut self, dt: f64) {
+        self.inner.first.update(dt);
+        self.inner.second.update(dt);
+    }
+
+    fn draw(&mut self, canvas: &mut Canvas<Window>, settings: DrawSettings) {
+        let (w, h) = canvas.window().size();
+        self.inner.draw(canvas, &Position::Rect(Rect::new(0, 0, w, h)), settings);
+    }
+
+    fn event(&mut self, event: YEvent) {
+        match event {
+            YEvent::Other(Event::MouseButtonDown { x, y, mouse_btn, .. }) => {
+                if y < *TOOL_HEIGHT as i32 {
+                    self.inner.first.mouse_down(Point::new(x, y), mouse_btn);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn action(&self) -> Action {
+        Action::Continue
+    }
+
+    fn register(&mut self) {
+        self.inner.first.register();
+        self.inner.second.register();
+    }
+
+    fn load(&mut self) {
+        self.inner.first.load();
+        self.inner.second.load();
+    }
 }
 
 pub const CIRCLE_STEP: usize = 100;

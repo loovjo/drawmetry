@@ -4,7 +4,6 @@ use graphics::*;
 use icons;
 use backend::geometry;
 
-use ytesrev::prelude::*;
 use ytesrev::drawable::{DrawSettings, Drawable, Position, State};
 use ytesrev::image::PngImage;
 use ytesrev::sdl2::event::Event;
@@ -56,7 +55,7 @@ pub struct Tool {
     pub selected: Vec<geometry::PointID>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ToolKind {
     Point,
     Line,
@@ -82,6 +81,17 @@ pub struct ToolBar {
 impl ToolBar {
     pub fn new(state: Arc<Mutex<DState>>) -> ToolBar {
         ToolBar { state }
+    }
+
+    pub fn mouse_down(&mut self, position: Point, button: MouseButton) {
+        for (rect, (tool, _)) in TOOL_RECTS.iter().zip(TOOLS.lock().unwrap().iter()) {
+            if rect.contains_point(position) {
+                if let Ok(mut state) = self.state.lock() {
+                    state.current_tool.kind = *tool;
+                    state.current_tool.selected.clear();
+                }
+            }
+        }
     }
 
     fn draw_menu(&mut self, canvas: &mut Canvas<Window>, settings: DrawSettings) -> Result<(), String> {
