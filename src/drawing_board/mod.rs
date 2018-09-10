@@ -1,20 +1,16 @@
-use std::f64::consts::PI;
 use std::sync::{Mutex, Arc};
-use std::time::{Duration, Instant};
 
 use super::backend::geometry;
 use super::graphics::*;
-use super::icons;
-use super::toolbar::{Tool, ToolKind};
+use super::toolbar::ToolKind;
 use super::transform::Transform;
 
 use ytesrev::drawable::{DrawSettings, Drawable, Position, State};
-use ytesrev::image::PngImage;
 use ytesrev::sdl2::event::Event;
 use ytesrev::sdl2::keyboard::Keycode;
 use ytesrev::sdl2::mouse::MouseButton;
 use ytesrev::sdl2::pixels::Color;
-use ytesrev::sdl2::rect::{Point, Rect};
+use ytesrev::sdl2::rect::Point;
 use ytesrev::sdl2::render::Canvas;
 use ytesrev::sdl2::video::Window;
 
@@ -41,9 +37,6 @@ impl DrawingBoard {
 
     fn try_draw(&mut self, canvas: &mut Canvas<Window>) -> Result<(), String> {
         let state = self.state.lock().unwrap();
-
-        //canvas.set_draw_color(Color::RGBA(255, 255, 255, 255));
-        //canvas.clear();
 
         canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
         let (w, h) = canvas.window().size();
@@ -102,6 +95,65 @@ impl DrawingBoard {
 
         Ok(())
     }
+
+    pub fn mouse_down(&mut self, position: Point, button: MouseButton) {
+        let (x, y) = (position.x(), position.y());
+
+        let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
+
+        let state = &mut *self.state.lock().unwrap();
+
+        match state.current_tool.kind {
+            ToolKind::Point => {
+                let point = get_closest(
+                    mouse_po,
+                    state.world.get_potential_points(),
+                    |point| state.world.resolve_point(point).unwrap_or((0., 0.)),
+                    Some(100. / self.transform.scale),
+                ).unwrap_or(geometry::Point::Arbitrary(mouse_po));
+
+                state.world.add_point(point);
+            }
+            _ => {
+                if let Some((&id, _)) = get_closest(
+                    mouse_po,
+                    state.world.points.iter().collect(),
+                    |(_, point)| state.world.resolve_point(point).unwrap_or((0., 0.)),
+                    Some(100. / self.transform.scale),
+                ) {
+                    if state.current_tool.kind == ToolKind::Mover {
+                        if let Some(geometry::Point::Arbitrary(_)) =
+                            state.world.points.get(&id)
+                        {
+                        } else {
+                            return;
+                        }
+                    }
+                    state.current_tool.selected.push(id);
+                    if state.current_tool.selected.len() >= state.current_tool.kind.needed_selected() {
+                        match state.current_tool.kind {
+                            ToolKind::Line => {
+                                state.world.add_shape(geometry::Shape::Line(
+                                    state.current_tool.selected[0],
+                                    state.current_tool.selected[1],
+                                ));
+                                state.current_tool.selected.clear();
+                            }
+                            ToolKind::Circle => {
+                                state.world.add_shape(geometry::Shape::Circle(
+                                    state.current_tool.selected[0],
+                                    state.current_tool.selected[1],
+                                ));
+                                state.current_tool.selected.clear();
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 }
 
 impl Drawable for DrawingBoard {
@@ -133,141 +185,64 @@ impl Drawable for DrawingBoard {
     }
 
     fn event(&mut self, event: Event) {
-        //match event {
-            //Event::KeyDown {
-                //keycode: Some(Keycode::Escape),
-                //..
-            //} => {
-                //self.tool.selected.clear();
-            //}
-            //Event::KeyDown {
-                //keycode: Some(Keycode::L),
-                //..
-            //} => {
-                //self.tool.kind = ToolKind::Line;
-            //}
-            //Event::KeyDown {
-                //keycode: Some(Keycode::C),
-                //..
-            //} => {
-                //self.tool.kind = ToolKind::Circle;
-            //}
-            //Event::KeyDown {
-                //keycode: Some(Keycode::P),
-                //..
-            //} => {
-                //self.tool.kind = ToolKind::Point;
-            //}
-            //Event::KeyDown {
-                //keycode: Some(Keycode::M),
-                //..
-            //} => {
-                //self.tool.kind = ToolKind::Mover;
-            //}
-            //Event::MouseButtonDown {
-                //x,
-                //y,
-                //mouse_btn: MouseButton::Left,
-                //..
-            //} => {
-                //let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
-                //match self.tool.kind {
-                    //ToolKind::Point => {
-                        //let point = get_closest(
-                            //mouse_po,
-                            //self.world.get_potential_points(),
-                            //|point| self.world.resolve_point(point).unwrap_or((0., 0.)),
-                            //Some(100. / self.transform.scale),
-                        //).unwrap_or(geometry::Point::Arbitrary(mouse_po));
+        let state = &mut *self.state.lock().unwrap();
 
-                        //self.world.add_point(point);
-                    //}
-                    //_ => {
-                        //if let Some((&id, _)) = get_closest(
-                            //mouse_po,
-                            //self.world.points.iter().collect(),
-                            //|(_, point)| self.world.resolve_point(point).unwrap_or((0., 0.)),
-                            //Some(100. / self.transform.scale),
-                        //) {
-                            //if self.tool.kind == ToolKind::Mover {
-                                //if let Some(geometry::Point::Arbitrary(_)) =
-                                    //self.world.points.get(&id)
-                                //{
-                                //} else {
-                                    //return;
-                                //}
-                            //}
-                            //self.tool.selected.push(id);
-                            //if self.tool.selected.len() >= self.tool.kind.needed_selected() {
-                                //match self.tool.kind {
-                                    //ToolKind::Line => {
-                                        //self.world.add_shape(geometry::Shape::Line(
-                                            //self.tool.selected[0],
-                                            //self.tool.selected[1],
-                                        //));
-                                        //self.tool.selected.clear();
-                                    //}
-                                    //ToolKind::Circle => {
-                                        //self.world.add_shape(geometry::Shape::Circle(
-                                            //self.tool.selected[0],
-                                            //self.tool.selected[1],
-                                        //));
-                                        //self.tool.selected.clear();
-                                    //}
-                                    //_ => {}
-                                //}
-                            //}
-                        //}
-                    //}
-                //}
-            //}
-            //Event::MouseButtonUp { .. } => match self.tool.kind {
-                //ToolKind::Mover => {
-                    //self.tool.selected.clear();
-                //}
-                //_ => {}
-            //},
-            //Event::KeyDown {
-                //keycode: Some(Keycode::Space),
-                //..
-            //} => {
-                //self.moving_screen = true;
-            //}
-            //Event::KeyUp {
-                //keycode: Some(Keycode::Space),
-                //..
-            //} => {
-                //self.moving_screen = false;
-            //}
-            //Event::MouseMotion { x, y, .. } => {
-                //if self.moving_screen {
-                    //let (dx, dy) = (x - self.mouse_last.x, y - self.mouse_last.y);
-                    //let (dtx, dty) = (
-                        //dx as f64 / self.transform.scale,
-                        //dy as f64 / self.transform.scale,
-                    //);
+        match event {
+            Event::KeyDown {
+                keycode: Some(Keycode::Escape),
+                ..
+            } => {
+                state.current_tool.selected.clear();
+            }
+            Event::MouseButtonUp { .. } => match state.current_tool.kind {
+                ToolKind::Mover => {
+                    state.current_tool.selected.clear();
+                }
+                _ => {}
+            },
+            Event::KeyDown {
+                keycode: Some(Keycode::Space),
+                ..
+            } => {
+                self.moving_screen = true;
+            }
+            Event::KeyUp {
+                keycode: Some(Keycode::Space),
+                ..
+            } => {
+                self.moving_screen = false;
+            }
+            Event::MouseMotion { x, y, .. } => {
+                if self.moving_screen {
+                    let (dx, dy) = (x - self.mouse_last.x, y - self.mouse_last.y);
+                    let (dtx, dty) = (
+                        dx as f64 / self.transform.scale,
+                        dy as f64 / self.transform.scale,
+                    );
 
-                    //self.transform.translation = (
-                        //self.transform.translation.0 + dtx as f64,
-                        //self.transform.translation.1 + dty as f64,
-                    //);
-                //}
-                //if let ToolKind::Mover = self.tool.kind {
-                    //if let Some(id) = self.tool.selected.get(0) {
-                        //let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
+                    println!("Moving {} {}", dtx, dty);
 
-                        //if let Some(point) = self.world.points.get_mut(&id) {
-                            //*point = geometry::Point::Arbitrary(mouse_po);
-                        //}
-                    //}
-                //}
-                //self.mouse_last = Point::new(x, y);
-            //}
-            //Event::MouseWheel { y, .. } => {
-                //self.scrolling += -y as f64 / 300.;
-            //}
-            //_ => {}
-        //}
+                    self.transform.translation = (
+                        self.transform.translation.0 + dtx as f64,
+                        self.transform.translation.1 + dty as f64,
+                    );
+                }
+                if let ToolKind::Mover = state.current_tool.kind {
+                    if let Some(id) = state.current_tool.selected.get(0) {
+                        let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
+
+                        if let Some(point) = state.world.points.get_mut(&id) {
+                            *point = geometry::Point::Arbitrary(mouse_po);
+                        }
+                    }
+                }
+                self.mouse_last = Point::new(x, y);
+            }
+            Event::MouseWheel { y, .. } => {
+                self.scrolling += -y as f64 / 300.;
+            }
+            _ => {}
+        }
     }
 }
 

@@ -64,7 +64,13 @@ impl Scene for DScene {
             YEvent::Other(Event::MouseButtonDown { x, y, mouse_btn, .. }) => {
                 if y < *TOOL_HEIGHT as i32 {
                     self.inner.first.mouse_down(Point::new(x, y), mouse_btn);
+                } else {
+                    self.inner.second.mouse_down(Point::new(x, y), mouse_btn);
                 }
+            }
+            YEvent::Other(e) => {
+                self.inner.first.event(e.clone());
+                self.inner.second.event(e.clone());
             }
             _ => {}
         }
@@ -114,4 +120,32 @@ pub fn fill_circle_points((x, y): (f64, f64), r: f64) -> Vec<Point> {
         points.push(Point::new(x_ + x as i32, (-y_ + y) as i32));
     }
     points
+}
+
+pub fn get_closest<T, F: Fn(&T) -> (f64, f64)>(
+    to: (f64, f64),
+    objs: Vec<T>,
+    f: F,
+    max: Option<f64>,
+) -> Option<T> {
+    let mut best: Option<(f64, T)> = None;
+    for obj in objs {
+        let pos = f(&obj);
+
+        let (dx, dy) = (pos.0 - to.0, pos.1 - to.1);
+        let dist_sq = dx * dx + dy * dy;
+
+        if max.map(|x| dist_sq > x * x).unwrap_or(false) {
+            continue;
+        }
+        if let Some((cur_dist, _)) = best {
+            if dist_sq < cur_dist {
+                best = Some((dist_sq, obj));
+            }
+        } else {
+            best = Some((dist_sq, obj));
+        }
+    }
+
+    best.map(|x| x.1)
 }

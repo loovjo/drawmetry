@@ -64,7 +64,7 @@ pub enum ToolKind {
 }
 
 impl ToolKind {
-    fn needed_selected(&self) -> usize {
+    pub fn needed_selected(&self) -> usize {
         match self {
             ToolKind::Point => 1,
             ToolKind::Line => 2,
