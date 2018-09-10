@@ -1,11 +1,13 @@
-use std::sync::{Mutex, Arc};
+use std::sync::{Arc, Mutex};
 
 use super::backend::geometry;
 use super::graphics::*;
+use super::icons;
 use super::toolbar::ToolKind;
 use super::transform::Transform;
 
 use ytesrev::drawable::{DrawSettings, Drawable, Position, State};
+use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;
 use ytesrev::sdl2::keyboard::Keycode;
 use ytesrev::sdl2::mouse::MouseButton;
@@ -22,6 +24,11 @@ pub struct DrawingBoard {
     pub mouse_last: Point,
     pub moving_screen: bool,
     pub scrolling: f64,
+
+    circle_normal: PngImage,
+    circle_select: PngImage,
+    circle_moving: PngImage,
+    circle_mover: PngImage,
 }
 
 impl DrawingBoard {
@@ -32,10 +39,19 @@ impl DrawingBoard {
             mouse_last: Point::new(0, 0),
             moving_screen: false,
             scrolling: 0.,
+
+            circle_normal: icons::CIRCLE_NORMAL.clone(),
+            circle_select: icons::CIRCLE_SELECT.clone(),
+            circle_moving: icons::CIRCLE_MOVING.clone(),
+            circle_mover: icons::CIRCLE_MOVER.clone(),
         }
     }
 
-    fn try_draw(&mut self, canvas: &mut Canvas<Window>) -> Result<(), String> {
+    fn try_draw(
+        &mut self,
+        canvas: &mut Canvas<Window>,
+        settings: DrawSettings,
+    ) -> Result<(), String> {
         let state = self.state.lock().unwrap();
 
         canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
@@ -81,15 +97,22 @@ impl DrawingBoard {
                 let p_px = self.transform.transform_po_to_px(rpoint);
 
                 canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
-                if let ToolKind::Mover = state.current_tool.kind {
-                    if let geometry::Point::Arbitrary(_) = point {
-                        canvas.set_draw_color(Color::RGBA(0, 0, 255, 255));
-                    }
-                }
-                if state.current_tool.selected.contains(id) {
-                    canvas.set_draw_color(Color::RGBA(0, 255, 0, 255));
-                }
-                fill_circle(canvas, p_px, 5.)?;
+                let is_selected = state.current_tool.selected.contains(id);
+                let mover = state.current_tool.kind == ToolKind::Mover;
+
+                let image = match (is_selected, mover) {
+                    (true, false) => &mut self.circle_select,
+                    (false, true) => &mut self.circle_mover,
+                    (true, true) => &mut self.circle_moving,
+                    (false, _) => &mut self.circle_normal,
+                };
+
+                image.draw(
+                    canvas,
+                    &Position::Center(Point::new(p_px.0 as i32, p_px.1 as i32)),
+                    settings,
+                );
+
             }
         }
 
@@ -122,15 +145,15 @@ impl DrawingBoard {
                     Some(100. / self.transform.scale),
                 ) {
                     if state.current_tool.kind == ToolKind::Mover {
-                        if let Some(geometry::Point::Arbitrary(_)) =
-                            state.world.points.get(&id)
-                        {
+                        if let Some(geometry::Point::Arbitrary(_)) = state.world.points.get(&id) {
                         } else {
                             return;
                         }
                     }
                     state.current_tool.selected.push(id);
-                    if state.current_tool.selected.len() >= state.current_tool.kind.needed_selected() {
+                    if state.current_tool.selected.len()
+                        >= state.current_tool.kind.needed_selected()
+                    {
                         match state.current_tool.kind {
                             ToolKind::Line => {
                                 state.world.add_shape(geometry::Shape::Line(
@@ -153,7 +176,6 @@ impl DrawingBoard {
             }
         }
     }
-
 }
 
 impl Drawable for DrawingBoard {
@@ -171,10 +193,10 @@ impl Drawable for DrawingBoard {
         State::Working
     }
 
-    fn draw(&mut self, canvas: &mut Canvas<Window>, position: &Position, _: DrawSettings) {
+    fn draw(&mut self, canvas: &mut Canvas<Window>, position: &Position, settings: DrawSettings) {
         if let Position::Rect(r) = position {
             canvas.set_clip_rect(*r);
-            self.try_draw(canvas).expect("Can't draw");
+            self.try_draw(canvas, settings).expect("Can't draw");
             canvas.set_clip_rect(None);
         }
     }
@@ -243,4 +265,3 @@ impl Drawable for DrawingBoard {
         }
     }
 }
-

@@ -108,10 +108,6 @@ pub fn draw_circle_points((x, y): (f64, f64), r: f64) -> Vec<Point> {
     points
 }
 
-pub fn fill_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) -> Result<(), String> {
-    canvas.draw_lines(&*fill_circle_points(pos, r))
-}
-
 pub fn fill_circle_points((x, y): (f64, f64), r: f64) -> Vec<Point> {
     let mut points = Vec::with_capacity(r as usize * 4);
     for x_ in -r as i32..r as i32 {
