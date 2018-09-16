@@ -17,17 +17,17 @@ use ytesrev::sdl2::video::Window;
 pub const TOOL_EDGE: u32 = 2;
 
 lazy_static! {
-    pub static ref TOOLS: Mutex<Vec<(ToolKind, PngImage)>> = Mutex::new(vec![
+    pub static ref TOOLS: Vec<(ToolKind, PngImage)> = vec![
         (ToolKind::Point, icons::TOOL_POINT.clone()),
         (ToolKind::Line, icons::TOOL_LINE.clone()),
         (ToolKind::Circle, icons::TOOL_CIRCLE.clone()),
         (ToolKind::Mover, icons::TOOL_MOVER.clone()),
-    ]);
+    ];
     pub static ref TOOL_RECTS: Vec<Rect> = {
         let mut x = TOOL_EDGE as i32;
 
         let mut res = Vec::new();
-        for (_, image) in TOOLS.lock().unwrap().iter() {
+        for (_, image) in TOOLS.iter() {
             res.push(Rect::new(
                 x,
                 TOOL_EDGE as i32,
@@ -41,8 +41,6 @@ lazy_static! {
         res
     };
     pub static ref TOOL_HEIGHT: usize = TOOLS
-        .lock()
-        .unwrap()
         .iter()
         .map(|(_, image)| image.width)
         .max()
@@ -85,7 +83,7 @@ impl ToolBar {
     }
 
     pub fn mouse_down(&mut self, position: Point, button: MouseButton) {
-        for (rect, (tool, _)) in TOOL_RECTS.iter().zip(TOOLS.lock().unwrap().iter()) {
+        for (rect, (tool, _)) in TOOL_RECTS.iter().zip(TOOLS.iter()) {
             if rect.contains_point(position) {
                 if let Ok(mut state) = self.state.lock() {
                     state.current_tool.kind = *tool;
@@ -95,7 +93,7 @@ impl ToolBar {
         }
     }
 
-    fn draw_menu(&mut self, canvas: &mut Canvas<Window>, settings: DrawSettings) -> Result<(), String> {
+    fn draw_menu(&self, canvas: &mut Canvas<Window>, settings: DrawSettings) -> Result<(), String> {
         let current_tool = &self.state.lock().unwrap().current_tool;
 
         let width = canvas.window().size().0;
@@ -110,7 +108,7 @@ impl ToolBar {
             *TOOL_HEIGHT as u32,
         ))?;
 
-        for (rect, (tool, image)) in TOOL_RECTS.iter().zip(TOOLS.lock().unwrap().iter_mut()) {
+        for (rect, (tool, image)) in TOOL_RECTS.iter().zip(TOOLS.iter()) {
             if *tool == current_tool.kind {
                 canvas.set_draw_color(Color::RGBA(140, 120, 100, 255));
                 canvas.fill_rect(*rect)?;
@@ -145,7 +143,7 @@ impl Drawable for ToolBar {
         State::Working
     }
 
-    fn draw(&mut self, canvas: &mut Canvas<Window>, position: &Position, settings: DrawSettings) {
+    fn draw(&self, canvas: &mut Canvas<Window>, position: &Position, settings: DrawSettings) {
         self.draw_menu(canvas, settings).expect("Can't draw toolbar");
     }
 

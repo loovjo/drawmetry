@@ -55,7 +55,7 @@ impl Scene for DScene {
         self.inner.second.update(dt);
     }
 
-    fn draw(&mut self, canvas: &mut Canvas<Window>, settings: DrawSettings) {
+    fn draw(&self, canvas: &mut Canvas<Window>, settings: DrawSettings) {
         let (w, h) = canvas.window().size();
         self.inner
             .draw(canvas, &Position::Rect(Rect::new(0, 0, w, h)), settings);

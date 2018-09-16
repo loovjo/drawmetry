@@ -24,11 +24,6 @@ pub struct DrawingBoard {
     pub mouse_last: Point,
     pub moving_screen: bool,
     pub scrolling: f64,
-
-    circle_normal: PngImage,
-    circle_select: PngImage,
-    circle_moving: PngImage,
-    circle_mover: PngImage,
 }
 
 impl DrawingBoard {
@@ -39,16 +34,11 @@ impl DrawingBoard {
             mouse_last: Point::new(0, 0),
             moving_screen: false,
             scrolling: 0.,
-
-            circle_normal: icons::CIRCLE_NORMAL.clone(),
-            circle_select: icons::CIRCLE_SELECT.clone(),
-            circle_moving: icons::CIRCLE_MOVING.clone(),
-            circle_mover: icons::CIRCLE_MOVER.clone(),
         }
     }
 
     fn try_draw(
-        &mut self,
+        &self,
         canvas: &mut Canvas<Window>,
         settings: DrawSettings,
     ) -> Result<(), String> {
@@ -94,16 +84,16 @@ impl DrawingBoard {
                 let mover = state.current_tool.kind == ToolKind::Mover;
 
                 let image = match (is_selected, mover) {
-                    (true, false) => &mut self.circle_select,
+                    (true, false) => &*icons::CIRCLE_SELECT,
                     (false, true) => {
                         if let geometry::Point::Arbitrary(_) = point {
-                            &mut self.circle_mover
+                            &*icons::CIRCLE_MOVER
                         } else {
-                            &mut self.circle_normal
+                            &*icons::CIRCLE_NORMAL
                         }
                     }
-                    (true, true) => &mut self.circle_moving,
-                    (false, _) => &mut self.circle_normal,
+                    (true, true) => &*icons::CIRCLE_MOVING,
+                    (false, _) => &*icons::CIRCLE_NORMAL,
                 };
 
                 image.draw(
@@ -191,7 +181,7 @@ impl Drawable for DrawingBoard {
         State::Working
     }
 
-    fn draw(&mut self, canvas: &mut Canvas<Window>, position: &Position, settings: DrawSettings) {
+    fn draw(&self, canvas: &mut Canvas<Window>, position: &Position, settings: DrawSettings) {
         if let Position::Rect(r) = position {
             canvas.set_clip_rect(*r);
             self.try_draw(canvas, settings).expect("Can't draw");
