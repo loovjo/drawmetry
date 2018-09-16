@@ -14,7 +14,7 @@ use ytesrev::sdl2::rect::{Point, Rect};
 use ytesrev::sdl2::render::Canvas;
 use ytesrev::sdl2::video::Window;
 
-const TOOL_EDGE: u32 = 2;
+pub const TOOL_EDGE: u32 = 2;
 
 lazy_static! {
     pub static ref TOOLS: Mutex<Vec<(ToolKind, PngImage)>> = Mutex::new(vec![
@@ -47,6 +47,7 @@ lazy_static! {
         .map(|(_, image)| image.width)
         .max()
         .unwrap_or(0);
+
 }
 
 #[derive(Debug)]

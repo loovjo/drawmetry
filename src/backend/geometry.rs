@@ -357,7 +357,12 @@ fn intersect_circle_line(
     if disc == 0. {
         IntersectionResult::One((rx1, ry1))
     } else {
-        IntersectionResult::Two((rx1, ry1), (rx2, ry2))
+        let (p1, p2) = ((rx1, ry1), (rx2, ry2));
+        if ly1 > ly2 {
+            IntersectionResult::Two(p1, p2)
+        } else {
+            IntersectionResult::Two(p2, p1)
+        }
     }
 }
 

@@ -76,17 +76,11 @@ impl DrawingBoard {
                         let start_px = self.transform.transform_po_to_px(start_point);
                         let end_px = self.transform.transform_po_to_px(end_point);
 
-                        canvas.draw_line(
-                            Point::new(start_px.0 as i32, start_px.1 as i32),
-                            Point::new(end_px.0 as i32, end_px.1 as i32),
-                        )?;
+                        utils::line_aa(canvas, (start_px.0, start_px.1), (end_px.0, end_px.1));
                     }
                     geometry::ResolvedShape::LineUp(x) => {
                         let x_px = self.transform.transform_po_to_px((x, 0.)).0;
-                        canvas.draw_line(
-                            Point::new(x_px as i32, 0),
-                            Point::new(x_px as i32, h as i32),
-                        )?;
+                        utils::line_aa(canvas, (x_px, 0.), (x_px, h as f64));
                     }
                 }
             }
@@ -96,13 +90,18 @@ impl DrawingBoard {
             if let Some(rpoint) = state.world.resolve_point(point) {
                 let p_px = self.transform.transform_po_to_px(rpoint);
 
-                canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
                 let is_selected = state.current_tool.selected.contains(id);
                 let mover = state.current_tool.kind == ToolKind::Mover;
 
                 let image = match (is_selected, mover) {
                     (true, false) => &mut self.circle_select,
-                    (false, true) => &mut self.circle_mover,
+                    (false, true) => {
+                        if let geometry::Point::Arbitrary(_) = point {
+                            &mut self.circle_mover
+                        } else {
+                            &mut self.circle_normal
+                        }
+                    }
                     (true, true) => &mut self.circle_moving,
                     (false, _) => &mut self.circle_normal,
                 };
@@ -112,7 +111,6 @@ impl DrawingBoard {
                     &Position::Center(Point::new(p_px.0 as i32, p_px.1 as i32)),
                     settings,
                 );
-
             }
         }
 

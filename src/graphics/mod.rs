@@ -1,9 +1,10 @@
 use std::f64::consts::PI;
+use std::iter;
 use std::sync::{Arc, Mutex};
 
 use backend::geometry;
 use drawing_board::DrawingBoard;
-use toolbar::{Tool, ToolBar, ToolKind, TOOL_HEIGHT};
+use toolbar::{Tool, ToolBar, ToolKind, TOOL_HEIGHT, TOOL_EDGE};
 use ytesrev::drawable::{DrawSettings, Position};
 use ytesrev::prelude::*;
 use ytesrev::scene::Action;
@@ -39,7 +40,7 @@ pub fn create_layout(world: geometry::Geometry) -> DScene {
 
     DScene {
         inner: Split::new_const(
-            *TOOL_HEIGHT as u32,
+            *TOOL_HEIGHT as u32 + TOOL_EDGE * 2,
             Orientation::Vertical,
             UpdateOrder::FirstSecond,
             tool_bar,
@@ -56,12 +57,15 @@ impl Scene for DScene {
 
     fn draw(&mut self, canvas: &mut Canvas<Window>, settings: DrawSettings) {
         let (w, h) = canvas.window().size();
-        self.inner.draw(canvas, &Position::Rect(Rect::new(0, 0, w, h)), settings);
+        self.inner
+            .draw(canvas, &Position::Rect(Rect::new(0, 0, w, h)), settings);
     }
 
     fn event(&mut self, event: YEvent) {
         match event {
-            YEvent::Other(Event::MouseButtonDown { x, y, mouse_btn, .. }) => {
+            YEvent::Other(Event::MouseButtonDown {
+                x, y, mouse_btn, ..
+            }) => {
                 if y < *TOOL_HEIGHT as i32 {
                     self.inner.first.mouse_down(Point::new(x, y), mouse_btn);
                 } else {
@@ -91,16 +95,29 @@ impl Scene for DScene {
     }
 }
 
-pub const CIRCLE_STEP: usize = 100;
+pub const CIRCLE_STEP: usize = 300;
 
 pub fn draw_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) -> Result<(), String> {
-    canvas.draw_lines(&*draw_circle_points(pos, r))
+    let points = draw_circle_points(pos, r);
+
+    let mut last = *points.last().unwrap();
+
+    for point in points {
+        utils::line_aa(
+            canvas,
+            (last.x() as f64, last.y() as f64),
+            (point.x() as f64, point.y() as f64),
+        );
+        last = point;
+    }
+
+    Ok(())
 }
 
 pub fn draw_circle_points((x, y): (f64, f64), r: f64) -> Vec<Point> {
     let mut points = Vec::with_capacity(CIRCLE_STEP);
 
-    for i in 0..CIRCLE_STEP + 1 {
+    for i in 0..CIRCLE_STEP {
         let theta = (i as f64 / CIRCLE_STEP as f64) * 2. * PI;
         let (x_, y_) = (x + r * theta.cos(), y + r * theta.sin());
         points.push(Point::new(x_ as i32, y_ as i32));
