@@ -6,15 +6,11 @@ use super::icons;
 use super::toolbar::ToolKind;
 use super::transform::Transform;
 
-use ytesrev::drawable::{DrawSettings, Drawable, Position, State};
+use ytesrev::drawable::State;
 use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;
 use ytesrev::sdl2::keyboard::Keycode;
 use ytesrev::sdl2::mouse::MouseButton;
-use ytesrev::sdl2::pixels::Color;
-use ytesrev::sdl2::rect::Point;
-use ytesrev::sdl2::render::Canvas;
-use ytesrev::sdl2::video::Window;
 
 pub struct DrawingBoard {
     pub state: Arc<Mutex<DState>>,
@@ -107,7 +103,7 @@ impl DrawingBoard {
         Ok(())
     }
 
-    pub fn mouse_down(&mut self, position: Point, button: MouseButton) {
+    pub fn mouse_down(&mut self, position: Point, _button: MouseButton) {
         let (x, y) = (position.x(), position.y());
 
         let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));

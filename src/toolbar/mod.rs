@@ -5,14 +5,9 @@ use icons;
 use backend::geometry;
 
 use ytesrev::drawable::{DrawSettings, Drawable, Position, State};
-use ytesrev::image::PngImage;
+use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;
-use ytesrev::sdl2::keyboard::Keycode;
 use ytesrev::sdl2::mouse::MouseButton;
-use ytesrev::sdl2::pixels::Color;
-use ytesrev::sdl2::rect::{Point, Rect};
-use ytesrev::sdl2::render::Canvas;
-use ytesrev::sdl2::video::Window;
 
 pub const TOOL_EDGE: u32 = 2;
 
@@ -82,7 +77,7 @@ impl ToolBar {
         ToolBar { state }
     }
 
-    pub fn mouse_down(&mut self, position: Point, button: MouseButton) {
+    pub fn mouse_down(&mut self, position: Point, _button: MouseButton) {
         for (rect, (tool, _)) in TOOL_RECTS.iter().zip(TOOLS.iter()) {
             if rect.contains_point(position) {
                 if let Ok(mut state) = self.state.lock() {
@@ -143,11 +138,11 @@ impl Drawable for ToolBar {
         State::Working
     }
 
-    fn draw(&self, canvas: &mut Canvas<Window>, position: &Position, settings: DrawSettings) {
+    fn draw(&self, canvas: &mut Canvas<Window>, _position: &Position, settings: DrawSettings) {
         self.draw_menu(canvas, settings).expect("Can't draw toolbar");
     }
 
-    fn update(&mut self, dt: f64) {
+    fn update(&mut self, _dt: f64) {
     }
 
     fn event(&mut self, event: Event) {
