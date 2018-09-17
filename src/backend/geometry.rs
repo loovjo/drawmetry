@@ -3,6 +3,8 @@ use std::iter::IntoIterator;
 use std::collections::HashMap;
 use std::ops::Deref;
 
+const EPSILON: f64 = 1e-8;
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct PointID(u64);
 impl Deref for PointID {
@@ -196,7 +198,19 @@ impl Geometry {
                             + (cent1.1 - circ1.1) * (cent1.1 - circ1.1);
                         let rad1 = rad1_sq.sqrt();
 
-                        intersect_circle_line(cent1, rad1, point1, point2)
+                        let inter = intersect_circle_line(cent1, rad1, point1, point2);
+
+                        if let IntersectionResult::Two(a, b) = inter {
+                            if is_same(a, circ1) {
+                                IntersectionResult::One(b)
+                            } else if is_same(b, circ1) {
+                                IntersectionResult::One(a)
+                            } else {
+                                inter
+                            }
+                        } else {
+                            inter
+                        }
                     }
                     (Shape::Line(point1_pos, point2_pos), Shape::Line(point3_pos, point4_pos)) => {
                         let (point1, point2, point3, point4) = (
@@ -247,6 +261,10 @@ impl Geometry {
             }
         }
     }
+}
+
+pub fn is_same(a: (f64, f64), b: (f64, f64)) -> bool {
+    (a.0 - b.0).abs() < EPSILON && (a.1 - b.1).abs() < EPSILON
 }
 
 #[derive(Debug)]
