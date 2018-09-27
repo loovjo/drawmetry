@@ -25,7 +25,7 @@ impl Deref for ShapeID {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub enum Point {
     PrimIntersection(ShapeID, ShapeID),
     SecIntersection(ShapeID, ShapeID),
