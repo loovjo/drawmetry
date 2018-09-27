@@ -7,3 +7,4 @@ authors = ["loovjo <jonathan.loov@gmail.com>"]
 quickcheck = "0.6"
 ytesrev = "0.2.0"
 lazy_static = "1.1.0"
+ordered-float = "1.0"

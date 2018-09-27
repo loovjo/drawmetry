@@ -1,3 +1,5 @@
+use ordered_float::NotNan;
+
 use std::iter::IntoIterator;
 
 use std::collections::HashMap;
@@ -27,10 +29,16 @@ impl Deref for ShapeID {
 pub enum Point {
     PrimIntersection(ShapeID, ShapeID),
     SecIntersection(ShapeID, ShapeID),
-    Arbitrary((f64, f64)),
+    Arbitrary((NotNan<f64>, NotNan<f64>)),
 }
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+pub fn create_arbitrary(pos: (f64, f64)) -> Point {
+    let pos = (NotNan::new(pos.0), NotNan::new(pos.1));
+    assert!(pos.0.is_ok() && pos.1.is_ok());
+    Point::Arbitrary((pos.0.unwrap(), pos.1.unwrap()))
+}
+
+#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub enum Shape {
     /// (center, point on circumference),
     Circle(PointID, PointID),
@@ -161,7 +169,7 @@ impl Geometry {
 
     pub fn resolve_point(&self, point: &Point) -> Option<(f64, f64)> {
         match point {
-            Point::Arbitrary(pos) => Some(*pos),
+            Point::Arbitrary(pos) => Some((*pos.0, *pos.1)),
             Point::PrimIntersection(a, b) | Point::SecIntersection(a, b) => {
                 let obj_a = self.shapes.get(&a)?;
                 let obj_b = self.shapes.get(&b)?;

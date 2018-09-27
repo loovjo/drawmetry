@@ -117,7 +117,7 @@ impl DrawingBoard {
                     state.world.get_potential_points(),
                     |point| state.world.resolve_point(point).unwrap_or((0., 0.)),
                     Some(100. / self.transform.scale),
-                ).unwrap_or(geometry::Point::Arbitrary(mouse_po));
+                ).unwrap_or(geometry::create_arbitrary(mouse_po));
 
                 state.world.add_point(point);
             }
@@ -236,7 +236,7 @@ impl Drawable for DrawingBoard {
                         let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
 
                         if let Some(point) = state.world.points.get_mut(&id) {
-                            *point = geometry::Point::Arbitrary(mouse_po);
+                            *point = geometry::create_arbitrary(mouse_po);
                         }
                     }
                 }

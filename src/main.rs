@@ -1,3 +1,4 @@
+extern crate ordered_float;
 extern crate ytesrev;
 
 #[macro_use]
