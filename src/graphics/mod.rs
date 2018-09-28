@@ -88,7 +88,7 @@ impl Scene for DScene {
     }
 }
 
-pub const CIRCLE_STEP: usize = 300;
+pub const STEPS_BY_RADIUS: f64 = 0.8;
 
 pub fn draw_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) -> Result<(), String> {
     let points = draw_circle_points(pos, r);
@@ -108,10 +108,11 @@ pub fn draw_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) -> Resu
 }
 
 pub fn draw_circle_points((x, y): (f64, f64), r: f64) -> Vec<Point> {
-    let mut points = Vec::with_capacity(CIRCLE_STEP);
+    let steps = (STEPS_BY_RADIUS as f64 * r) as usize;
+    let mut points = Vec::with_capacity(steps);
 
-    for i in 0..CIRCLE_STEP {
-        let theta = (i as f64 / CIRCLE_STEP as f64) * 2. * PI;
+    for i in 0..steps {
+        let theta = (i as f64 / steps as f64) * 2. * PI;
         let (x_, y_) = (x + r * theta.cos(), y + r * theta.sin());
         points.push(Point::new(x_ as i32, y_ as i32));
     }
