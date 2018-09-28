@@ -13,6 +13,7 @@ pub const TOOL_EDGE: u32 = 2;
 
 lazy_static! {
     pub static ref TOOLS: Vec<(ToolKind, PngImage)> = vec![
+        (ToolKind::Selector, icons::TOOL_SELECTOR.clone()),
         (ToolKind::Point, icons::TOOL_POINT.clone()),
         (ToolKind::Line, icons::TOOL_LINE.clone()),
         (ToolKind::Circle, icons::TOOL_CIRCLE.clone()),
@@ -51,6 +52,7 @@ pub struct Tool {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ToolKind {
+    Selector,
     Point,
     Line,
     Circle,
@@ -64,6 +66,7 @@ impl ToolKind {
             ToolKind::Line => 2,
             ToolKind::Circle => 2,
             ToolKind::Mover => 1,
+            ToolKind::Selector => 0,
         }
     }
 }

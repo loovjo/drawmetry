@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="64"
+   height="64"
+   viewBox="0 0 64.000001 64.000001"
+   id="svg7322"
+   version="1.1"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="tool_selector.svg"
+   inkscape:export-filename="/Users/jonathanloov/Documents/Programmering/Rust/drawmetry/resources/tool_selector.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <defs
+     id="defs7324" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="7.9999999"
+     inkscape:cx="18.176596"
+     inkscape:cy="37.403414"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     units="px"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:snap-midpoints="true"
+     inkscape:object-paths="true"
+     inkscape:object-nodes="true"
+     inkscape:snap-smooth-nodes="true"
+     inkscape:snap-intersection-paths="true"
+     inkscape:window-width="1440"
+     inkscape:window-height="856"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:snap-nodes="true"
+     inkscape:snap-center="true" />
+  <metadata
+     id="metadata7327">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-988.3621)">
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 3.8769531 5.3613281 L 3.8769531 26.880859 L 11.701172 26.880859 A 10.565865 10.565865 0 0 1 22.070312 18.316406 A 10.565865 10.565865 0 0 1 22.5 18.337891 L 25.396484 13.320312 L 25.396484 5.3613281 L 3.8769531 5.3613281 z M 23.503906 18.429688 A 10.565865 10.565865 0 0 1 23.626953 18.447266 A 10.565865 10.565865 0 0 0 23.503906 18.429688 z M 24.519531 18.621094 A 10.565865 10.565865 0 0 1 24.693359 18.666016 A 10.565865 10.565865 0 0 0 24.519531 18.621094 z "
+       transform="translate(0,988.3621)"
+       id="path4769" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:3;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 30.636719 4.2441406 L 22.5 18.337891 A 10.565865 10.565865 0 0 1 30.753906 22.880859 L 41.396484 22.880859 L 30.636719 4.2441406 z "
+       transform="translate(0,988.3621)"
+       id="path4759" />
+    <path
+       style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:5;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 45.106518,1036.1997 0,-16.9046 13.159434,10.611 z"
+       id="path4368"
+       inkscape:connector-curvature="0" />
+    <path
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:5;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 50.395582,1030.3108 9.420544,19.7861"
+       id="path4370"
+       inkscape:connector-curvature="0" />
+    <path
+       style="opacity:1;fill:none;fill-opacity:1;stroke:#000000;stroke-width:3;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       d="m 32.636806,1017.2435 a 10.565865,10.565865 0 0 1 -10.565864,10.5659 10.565865,10.565865 0 0 1 -10.565865,-10.5659 10.565865,10.565865 0 0 1 10.565865,-10.5658 10.565865,10.565865 0 0 1 10.565864,10.5658 z"
+       id="path4846" />
+  </g>
+</svg>
