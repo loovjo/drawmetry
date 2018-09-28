@@ -45,8 +45,21 @@ pub struct GWrapper {
     pub visibility: HashMap<Group, Visibility>,
 }
 
+impl Deref for GWrapper {
+    type Target = geometry::Geometry;
+    fn deref(&self) -> &Self::Target {
+        &self.geometry
+    }
+}
+
+impl DerefMut for GWrapper {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.geometry
+    }
+}
+
 impl GWrapper {
-    fn new(geometry: geometry::Geometry) -> GWrapper {
+    pub fn new(geometry: geometry::Geometry) -> GWrapper {
         GWrapper {
             geometry,
             groups: HashMap::new(),
@@ -54,11 +67,11 @@ impl GWrapper {
         }
     }
 
-    fn get_group(&self, id: &ThingID) -> Group {
+    pub fn get_group(&self, id: &ThingID) -> Group {
         *self.groups.get(id).unwrap_or(&DEFAULT_GROUP)
     }
 
-    fn get_visibility(&self, id: &ThingID) -> Visibility {
+    pub fn get_visibility(&self, id: &ThingID) -> Visibility {
         *self
             .visibility
             .get(&self.get_group(id))

@@ -1,7 +1,7 @@
 use std::f64::consts::PI;
 use std::sync::{Arc, Mutex};
 
-use backend::geometry;
+use backend::{geometry, gwrapper::GWrapper};
 use drawing_board::DrawingBoard;
 use toolbar::{Tool, ToolBar, ToolKind, TOOL_HEIGHT, TOOL_EDGE};
 use ytesrev::prelude::*;
@@ -10,7 +10,7 @@ use ytesrev::sdl2::event::Event;
 pub const WINDOW_SIZE: (u32, u32) = (1200, 800);
 
 pub struct DState {
-    pub world: geometry::Geometry,
+    pub world: GWrapper,
     pub current_tool: Tool,
 }
 
@@ -18,7 +18,7 @@ pub struct DScene {
     inner: Split<ToolBar, DrawingBoard>,
 }
 
-pub fn create_layout(world: geometry::Geometry) -> DScene {
+pub fn create_layout(world: GWrapper) -> DScene {
     let state = DState {
         world: world,
         current_tool: Tool {

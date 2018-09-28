@@ -15,12 +15,12 @@ mod icons;
 mod toolbar;
 mod transform;
 
-use backend::geometry;
+use backend::{geometry, gwrapper};
 use ytesrev::prelude::*;
 use ytesrev::window::{WindowSettings, WSETTINGS_MAIN};
 
 fn main() {
-    let world = geometry::Geometry::new();
+    let world = gwrapper::GWrapper::new(geometry::Geometry::new());
     let all = graphics::create_layout(world);
 
     let mut manager = WindowManager::init_window(
