@@ -62,7 +62,7 @@ impl Scene for DScene {
         self.inner.first.update(dt);
         self.inner.second.update(dt);
 
-        if let Ok(tool_kind) = self.tool_change.try_recv() {
+        for tool_kind in self.tool_change.try_iter() {
             if let Ok(ref mut state) = self.state.lock() {
                 state.current_tool.kind = tool_kind;
                 state.current_tool.selected.clear();

@@ -18,6 +18,7 @@ mod transform;
 use backend::{geometry, gwrapper};
 use ytesrev::prelude::*;
 use ytesrev::window::{WindowSettings, WSETTINGS_MAIN};
+use ytesrev::sdl2::event::Event;
 
 fn main() {
     let world = gwrapper::GWrapper::new(geometry::Geometry::new());
@@ -34,6 +35,7 @@ fn main() {
                 },
             )],
             event_step_rule: Box::new(|_| false),
+            quit_rule: Box::new(|event| if let Event::Quit{..} = event { true } else { false } ),
         },
     );
 

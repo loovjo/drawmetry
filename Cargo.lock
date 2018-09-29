@@ -104,7 +104,7 @@ dependencies = [
  "lazy_static 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ordered-float 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "quickcheck 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "ytesrev 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ytesrev 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -459,7 +459,7 @@ dependencies = [
 
 [[package]]
 name = "ytesrev"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "lazy_static 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -528,4 +528,4 @@ dependencies = [
 "checksum winapi-i686-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ac3b87c63620426dd9b991e5ce0329eff545bccbbb34f3be09ff6fb6ab51b7b6"
 "checksum winapi-x86_64-pc-windows-gnu 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 "checksum wincolor 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b9dc3aa9dcda98b5a16150c54619c1ead22e3d3a5d458778ae914be760aa981a"
-"checksum ytesrev 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4ed88ec7d0ccc8accf1390454ef5e39835ecb5112cc521293f34ef198f73e98b"
+"checksum ytesrev 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d5355ed49d038ab67d0314c138bef31d3d79e85c0d64c5f83d3831501bcd16f9"
