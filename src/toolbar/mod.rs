@@ -146,7 +146,7 @@ impl <T: Send + Clone, I: Drawable + KnownSize> KnownSize for ToolBar<T, I> {
     }
 
     fn height(&self) -> usize {
-        self.tool_rects().iter().map(|x| x.bottom()).max().unwrap_or(0) as usize + TOOL_EDGE as usize * 2
+        self.tool_rects().iter().map(|x| x.bottom()).max().unwrap_or(0) as usize + TOOL_EDGE as usize
     }
 }
 
