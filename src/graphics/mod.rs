@@ -1,9 +1,13 @@
 use std::f64::consts::PI;
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    mpsc::{channel, Receiver},
+    Arc, Mutex,
+};
 
 use backend::{geometry, gwrapper::GWrapper};
 use drawing_board::DrawingBoard;
-use toolbar::{Tool, ToolBar, ToolKind, TOOL_HEIGHT, TOOL_EDGE};
+use toolbar::{Tool, ToolBar, ToolKind, DEFAULT_TOOLS, TOOL_EDGE};
+use ytesrev::drawable::KnownSize;
 use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;
 
@@ -15,30 +19,41 @@ pub struct DState {
 }
 
 pub struct DScene {
-    inner: Split<ToolBar, DrawingBoard>,
+    inner: Split<ToolBar<ToolKind, PngImage>, DrawingBoard>,
+    state: Arc<Mutex<DState>>,
+    tool_change: Receiver<ToolKind>,
 }
 
 pub fn create_layout(world: GWrapper) -> DScene {
     let state = DState {
         world: world,
         current_tool: Tool {
-            kind: ToolKind::Point,
+            kind: DEFAULT_TOOLS[0].0,
             selected: Vec::new(),
         },
     };
 
+    let (send, recv) = channel::<ToolKind>();
+
     let state_arc_mutex = Arc::new(Mutex::new(state));
-    let tool_bar = ToolBar::new(state_arc_mutex.clone());
+
+    let tool_bar = ToolBar {
+        tools: DEFAULT_TOOLS.clone(),
+        send_tool: send,
+        selected: Some(0),
+    };
     let drawing_board = DrawingBoard::new(state_arc_mutex.clone());
 
     DScene {
         inner: Split::new_const(
-            *TOOL_HEIGHT as u32 + TOOL_EDGE * 2,
+            tool_bar.height() as u32,
             Orientation::Vertical,
             UpdateOrder::FirstSecond,
             tool_bar,
             drawing_board,
         ),
+        state: state_arc_mutex.clone(),
+        tool_change: recv,
     }
 }
 
@@ -46,6 +61,13 @@ impl Scene for DScene {
     fn update(&mut self, dt: f64) {
         self.inner.first.update(dt);
         self.inner.second.update(dt);
+
+        if let Ok(tool_kind) = self.tool_change.try_recv() {
+            if let Ok(ref mut state) = self.state.lock() {
+                state.current_tool.kind = tool_kind;
+                state.current_tool.selected.clear();
+            }
+        }
     }
 
     fn draw(&self, canvas: &mut Canvas<Window>, settings: DrawSettings) {
@@ -59,7 +81,7 @@ impl Scene for DScene {
             YEvent::Other(Event::MouseButtonDown {
                 x, y, mouse_btn, ..
             }) => {
-                if y < *TOOL_HEIGHT as i32 {
+                if y < self.inner.first.height() as i32 {
                     self.inner.first.mouse_down(Point::new(x, y), mouse_btn);
                 } else {
                     self.inner.second.mouse_down(Point::new(x, y), mouse_btn);
@@ -91,7 +113,6 @@ impl Scene for DScene {
 pub const STEPS_BY_RADIUS: f64 = 0.8;
 
 pub fn draw_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) -> Result<(), String> {
-
     let points = draw_circle_points(pos, r);
 
     if points.len() == 0 {
