@@ -4,9 +4,9 @@ use std::sync::{
     Arc, Mutex,
 };
 
-use backend::{geometry, gwrapper::GWrapper};
+use backend::gwrapper::GWrapper;
 use drawing_board::DrawingBoard;
-use toolbar::{Tool, ToolBar, ToolKind, DEFAULT_TOOLS, TOOL_EDGE};
+use toolbar::{Tool, ToolBar, ToolKind, DEFAULT_TOOLS};
 use ytesrev::drawable::KnownSize;
 use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;

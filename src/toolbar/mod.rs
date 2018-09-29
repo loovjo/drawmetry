@@ -1,6 +1,5 @@
-use std::sync::{Mutex, Arc, mpsc::Sender};
+use std::sync::mpsc::Sender;
 
-use graphics::*;
 use icons;
 use backend::geometry;
 
@@ -92,7 +91,7 @@ impl <T: Send + Clone, I: Drawable + KnownSize> ToolBar<T, I> {
             self.height() as u32 - TOOL_EDGE * 2,
         ))?;
 
-        for (i, (rect, (tool, image))) in self.tool_rects().iter().zip(self.tools.iter()).enumerate() {
+        for (i, (rect, (_, image))) in self.tool_rects().iter().zip(self.tools.iter()).enumerate() {
             if Some(i) == self.selected {
                 canvas.set_draw_color(Color::RGBA(140, 120, 100, 255));
                 canvas.fill_rect(*rect)?;
