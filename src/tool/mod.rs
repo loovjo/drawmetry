@@ -28,8 +28,7 @@ impl ToolKind {
         match self {
             ToolKind::Point => Box::new(tools::PointTool {}),
             ToolKind::Circle => Box::new(tools::PointCircle { center: None }),
-            ToolKind::Line => Box::new(tools::PointLine { edge: None })
-            //ToolKind::Mover => {}
+            ToolKind::Line => Box::new(tools::PointLine { edge: None }), //ToolKind::Mover => {}
         }
     }
 }

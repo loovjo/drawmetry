@@ -6,9 +6,9 @@ use std::sync::{
 
 use backend::gwrapper::GWrapper;
 use drawing_board::DrawingBoard;
-use toolbar::{ToolBar, DEFAULT_TOOLS};
-use tool::{Tool, ToolKind, tools};
 use icons;
+use tool::{tools, Tool, ToolKind};
+use toolbar::{ToolBar, DEFAULT_TOOLS};
 use ytesrev::drawable::KnownSize;
 use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;

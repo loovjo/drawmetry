@@ -57,7 +57,6 @@ impl Tool for PointCircle {
     }
 }
 
-
 pub struct PointLine {
     pub edge: Option<geometry::PointID>,
 }

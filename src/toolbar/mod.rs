@@ -2,10 +2,10 @@ use std::sync::mpsc::Sender;
 
 use tool::ToolKind;
 
-use icons;
 use backend::geometry;
+use icons;
 
-use ytesrev::drawable::{DrawSettings, Drawable, Position, State, KnownSize};
+use ytesrev::drawable::{DrawSettings, Drawable, KnownSize, Position, State};
 use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;
 use ytesrev::sdl2::mouse::MouseButton;
@@ -30,7 +30,9 @@ impl ToolBar {
     pub fn mouse_down(&mut self, position: Point, _button: MouseButton) {
         for (i, (rect, (tool, _))) in self.tool_rects().iter().zip(self.tools.iter()).enumerate() {
             if rect.contains_point(position) {
-                self.send_tool.send(tool.clone()).expect("Couldn't send tool!");
+                self.send_tool
+                    .send(tool.clone())
+                    .expect("Couldn't send tool!");
                 self.selected = Some(i);
             }
         }
@@ -80,7 +82,11 @@ impl ToolBar {
                 ))?;
             }
 
-            image.draw(canvas, &Position::TopLeftCorner(Point::new(rect.x(), rect.y())), settings);
+            image.draw(
+                canvas,
+                &Position::TopLeftCorner(Point::new(rect.x(), rect.y())),
+                settings,
+            );
         }
 
         Ok(())
@@ -103,11 +109,11 @@ impl Drawable for ToolBar {
     }
 
     fn draw(&self, canvas: &mut Canvas<Window>, _position: &Position, settings: DrawSettings) {
-        self.draw_menu(canvas, settings).expect("Can't draw toolbar");
+        self.draw_menu(canvas, settings)
+            .expect("Can't draw toolbar");
     }
 
-    fn update(&mut self, _dt: f64) {
-    }
+    fn update(&mut self, _dt: f64) {}
 
     fn event(&mut self, event: Event) {
         match event {
@@ -122,7 +128,11 @@ impl KnownSize for ToolBar {
     }
 
     fn height(&self) -> usize {
-        self.tool_rects().iter().map(|x| x.bottom()).max().unwrap_or(0) as usize + TOOL_EDGE as usize
+        self.tool_rects()
+            .iter()
+            .map(|x| x.bottom())
+            .max()
+            .unwrap_or(0) as usize
+            + TOOL_EDGE as usize
     }
 }
-
