@@ -1,5 +1,7 @@
 use std::sync::mpsc::Sender;
 
+use tool::ToolKind;
+
 use icons;
 use backend::geometry;
 
@@ -10,47 +12,13 @@ use ytesrev::sdl2::mouse::MouseButton;
 
 pub const TOOL_EDGE: u32 = 2;
 
-lazy_static! {
-    pub static ref DEFAULT_TOOLS: Vec<(ToolKind, PngImage)> = vec![
-        (ToolKind::Point, icons::TOOL_POINT.clone()),
-        (ToolKind::Line, icons::TOOL_LINE.clone()),
-        (ToolKind::Circle, icons::TOOL_CIRCLE.clone()),
-        (ToolKind::Mover, icons::TOOL_MOVER.clone()),
-    ];
-}
-
-#[derive(Debug)]
-pub struct Tool {
-    pub kind: ToolKind,
-    pub selected: Vec<geometry::PointID>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum ToolKind {
-    Point,
-    Line,
-    Circle,
-    Mover,
-}
-
-impl ToolKind {
-    pub fn needed_selected(&self) -> usize {
-        match self {
-            ToolKind::Point => 1,
-            ToolKind::Line => 2,
-            ToolKind::Circle => 2,
-            ToolKind::Mover => 1,
-        }
-    }
-}
-
-pub struct ToolBar<T: Send + Clone, I: Drawable + KnownSize> {
-    pub tools: Vec<(T, I)>,
-    pub send_tool: Sender<T>,
+pub struct ToolBar {
+    pub tools: Vec<(ToolKind, PngImage)>,
+    pub send_tool: Sender<ToolKind>,
     pub selected: Option<usize>,
 }
 
-impl <T: Send + Clone, I: Drawable + KnownSize> ToolBar<T, I> {
+impl ToolBar {
     pub fn mouse_down(&mut self, position: Point, _button: MouseButton) {
         for (i, (rect, (tool, _))) in self.tool_rects().iter().zip(self.tools.iter()).enumerate() {
             if rect.contains_point(position) {
@@ -111,7 +79,7 @@ impl <T: Send + Clone, I: Drawable + KnownSize> ToolBar<T, I> {
     }
 }
 
-impl <T: Send + Clone, I: Drawable + KnownSize> Drawable for ToolBar<T, I> {
+impl Drawable for ToolBar {
     fn content(&self) -> Vec<&Drawable> {
         Vec::new()
     }
@@ -140,7 +108,7 @@ impl <T: Send + Clone, I: Drawable + KnownSize> Drawable for ToolBar<T, I> {
     }
 }
 
-impl <T: Send + Clone, I: Drawable + KnownSize> KnownSize for ToolBar<T, I> {
+impl KnownSize for ToolBar {
     fn width(&self) -> usize {
         self.tool_rects().last().map(|r| r.right()).unwrap_or(0) as usize
     }

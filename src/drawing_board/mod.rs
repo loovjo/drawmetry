@@ -1,9 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use super::backend::geometry;
+use super::backend::{geometry, gwrapper};
 use super::graphics::*;
 use super::icons;
-use super::toolbar::ToolKind;
+use super::tool::ToolKind;
 use super::transform::Transform;
 
 use ytesrev::drawable::State;
@@ -76,8 +76,8 @@ impl DrawingBoard {
             if let Some(rpoint) = state.world.resolve_point(point) {
                 let p_px = self.transform.transform_po_to_px(rpoint);
 
-                let is_selected = state.current_tool.selected.contains(id);
-                let mover = state.current_tool.kind == ToolKind::Mover;
+                let is_selected = state.current_tool.selected().contains_key(&gwrapper::ThingID::PointID(*id));
+                let mover = false;//state.current_tool.kind() == ToolKind::Mover;
 
                 let image = match (is_selected, mover) {
                     (true, false) => &*icons::CIRCLE_SELECT,
@@ -110,55 +110,57 @@ impl DrawingBoard {
 
         let state = &mut *self.state.lock().unwrap();
 
-        match state.current_tool.kind {
-            ToolKind::Point => {
-                let point = get_closest(
-                    mouse_po,
-                    state.world.get_potential_points(),
-                    |point| state.world.resolve_point(point).unwrap_or((0., 0.)),
-                    Some(100. / self.transform.scale),
-                ).unwrap_or(geometry::create_arbitrary(mouse_po));
+        state.current_tool.click(&mut state.world, mouse_po);
 
-                state.world.add_point(point);
-            }
-            _ => {
-                if let Some((&id, _)) = get_closest(
-                    mouse_po,
-                    state.world.points.iter().collect(),
-                    |(_, point)| state.world.resolve_point(point).unwrap_or((0., 0.)),
-                    Some(100. / self.transform.scale),
-                ) {
-                    if state.current_tool.kind == ToolKind::Mover {
-                        if let Some(geometry::Point::Arbitrary(_)) = state.world.points.get(&id) {
-                        } else {
-                            return;
-                        }
-                    }
-                    state.current_tool.selected.push(id);
-                    if state.current_tool.selected.len()
-                        >= state.current_tool.kind.needed_selected()
-                    {
-                        match state.current_tool.kind {
-                            ToolKind::Line => {
-                                state.world.add_shape(geometry::Shape::Line(
-                                    state.current_tool.selected[0],
-                                    state.current_tool.selected[1],
-                                ));
-                                state.current_tool.selected.clear();
-                            }
-                            ToolKind::Circle => {
-                                state.world.add_shape(geometry::Shape::Circle(
-                                    state.current_tool.selected[0],
-                                    state.current_tool.selected[1],
-                                ));
-                                state.current_tool.selected.clear();
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-            }
-        }
+        //match state.current_tool.kind() {
+            //ToolKind::Point => {
+                //let point = get_closest(
+                    //mouse_po,
+                    //state.world.get_potential_points(),
+                    //|point| state.world.resolve_point(point).unwrap_or((0., 0.)),
+                    //Some(100. / self.transform.scale),
+                //).unwrap_or(geometry::create_arbitrary(mouse_po));
+
+                //state.world.add_point(point);
+            //}
+            //_ => {
+                //if let Some((&id, _)) = get_closest(
+                    //mouse_po,
+                    //state.world.points.iter().collect(),
+                    //|(_, point)| state.world.resolve_point(point).unwrap_or((0., 0.)),
+                    //Some(100. / self.transform.scale),
+                //) {
+                    //if state.current_tool.kind == ToolKind::Mover {
+                        //if let Some(geometry::Point::Arbitrary(_)) = state.world.points.get(&id) {
+                        //} else {
+                            //return;
+                        //}
+                    //}
+                    //state.current_tool.selected.push(id);
+                    //if state.current_tool.selected.len()
+                        //>= state.current_tool.kind.needed_selected()
+                    //{
+                        //match state.current_tool.kind {
+                            //ToolKind::Line => {
+                                //state.world.add_shape(geometry::Shape::Line(
+                                    //state.current_tool.selected[0],
+                                    //state.current_tool.selected[1],
+                                //));
+                                //state.current_tool.selected.clear();
+                            //}
+                            //ToolKind::Circle => {
+                                //state.world.add_shape(geometry::Shape::Circle(
+                                    //state.current_tool.selected[0],
+                                    //state.current_tool.selected[1],
+                                //));
+                                //state.current_tool.selected.clear();
+                            //}
+                            //_ => {}
+                        //}
+                    //}
+                //}
+            //}
+        //}
     }
 }
 
@@ -198,14 +200,8 @@ impl Drawable for DrawingBoard {
                 keycode: Some(Keycode::Escape),
                 ..
             } => {
-                state.current_tool.selected.clear();
+                state.current_tool = state.current_tool.kind().into_tool();
             }
-            Event::MouseButtonUp { .. } => match state.current_tool.kind {
-                ToolKind::Mover => {
-                    state.current_tool.selected.clear();
-                }
-                _ => {}
-            },
             Event::KeyDown {
                 keycode: Some(Keycode::Space),
                 ..
@@ -230,15 +226,6 @@ impl Drawable for DrawingBoard {
                         self.transform.translation.0 + dtx as f64,
                         self.transform.translation.1 + dty as f64,
                     );
-                }
-                if let ToolKind::Mover = state.current_tool.kind {
-                    if let Some(id) = state.current_tool.selected.get(0) {
-                        let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
-
-                        if let Some(point) = state.world.points.get_mut(&id) {
-                            *point = geometry::create_arbitrary(mouse_po);
-                        }
-                    }
                 }
                 self.mouse_last = Point::new(x, y);
             }

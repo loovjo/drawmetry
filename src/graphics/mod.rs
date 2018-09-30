@@ -6,7 +6,9 @@ use std::sync::{
 
 use backend::gwrapper::GWrapper;
 use drawing_board::DrawingBoard;
-use toolbar::{Tool, ToolBar, ToolKind, DEFAULT_TOOLS};
+use toolbar::ToolBar;
+use tool::{Tool, ToolKind, tools};
+use icons;
 use ytesrev::drawable::KnownSize;
 use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;
@@ -15,11 +17,11 @@ pub const WINDOW_SIZE: (u32, u32) = (1200, 800);
 
 pub struct DState {
     pub world: GWrapper,
-    pub current_tool: Tool,
+    pub current_tool: Box<dyn Tool>,
 }
 
 pub struct DScene {
-    inner: Split<ToolBar<ToolKind, PngImage>, DrawingBoard>,
+    inner: Split<ToolBar, DrawingBoard>,
     state: Arc<Mutex<DState>>,
     tool_change: Receiver<ToolKind>,
 }
@@ -27,10 +29,7 @@ pub struct DScene {
 pub fn create_layout(world: GWrapper) -> DScene {
     let state = DState {
         world: world,
-        current_tool: Tool {
-            kind: DEFAULT_TOOLS[0].0,
-            selected: Vec::new(),
-        },
+        current_tool: ToolKind::Point.into_tool(),
     };
 
     let (send, recv) = channel::<ToolKind>();
@@ -38,7 +37,7 @@ pub fn create_layout(world: GWrapper) -> DScene {
     let state_arc_mutex = Arc::new(Mutex::new(state));
 
     let tool_bar = ToolBar {
-        tools: DEFAULT_TOOLS.clone(),
+        tools: vec![(ToolKind::Point, icons::TOOL_POINT.clone())],
         send_tool: send,
         selected: Some(0),
     };
@@ -64,8 +63,7 @@ impl Scene for DScene {
 
         for tool_kind in self.tool_change.try_iter() {
             if let Ok(ref mut state) = self.state.lock() {
-                state.current_tool.kind = tool_kind;
-                state.current_tool.selected.clear();
+                state.current_tool = tool_kind.into_tool();
             }
         }
     }

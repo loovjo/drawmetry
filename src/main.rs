@@ -12,6 +12,7 @@ mod backend;
 mod drawing_board;
 mod graphics;
 mod icons;
+mod tool;
 mod toolbar;
 mod transform;
 
