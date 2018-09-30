@@ -110,7 +110,7 @@ impl Scene for DScene {
     }
 }
 
-pub const STEPS_BY_RADIUS: f64 = 0.8;
+pub const STEPS_BY_RADIUS: f64 = 1.5;
 
 pub fn draw_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) -> Result<(), String> {
     let points = draw_circle_points(pos, r);
