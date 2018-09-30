@@ -15,8 +15,11 @@ use ytesrev::sdl2::mouse::MouseButton;
 pub struct DrawingBoard {
     pub state: Arc<Mutex<DState>>,
 
-    pub transform: Transform,
+    pub view: View,
+}
 
+pub struct View {
+    pub transform: Transform,
     pub mouse_last: Point,
     pub moving_screen: bool,
     pub scrolling: f64,
@@ -26,10 +29,12 @@ impl DrawingBoard {
     pub fn new(state: Arc<Mutex<DState>>) -> DrawingBoard {
         DrawingBoard {
             state,
-            transform: Transform::new_from_winsize((WINDOW_SIZE.0 as f64, WINDOW_SIZE.1 as f64)),
-            mouse_last: Point::new(0, 0),
-            moving_screen: false,
-            scrolling: 0.,
+            view: View {
+                transform: Transform::new_from_winsize((WINDOW_SIZE.0 as f64, WINDOW_SIZE.1 as f64)),
+                mouse_last: Point::new(0, 0),
+                moving_screen: false,
+                scrolling: 0.,
+            }
         }
     }
 
@@ -47,25 +52,25 @@ impl DrawingBoard {
             if let Some(ro) = state.world.resolve_shape(obj) {
                 match ro {
                     geometry::ResolvedShape::Circle(center, rad) => {
-                        let center_px = self.transform.transform_po_to_px(center);
-                        draw_circle(canvas, center_px, rad * self.transform.scale)?;
+                        let center_px = self.view.transform.transform_po_to_px(center);
+                        draw_circle(canvas, center_px, rad * self.view.transform.scale)?;
                     }
                     geometry::ResolvedShape::Line(k, m) => {
-                        let start_x = self.transform.transform_px_to_po((0., 0.)).0;
+                        let start_x = self.view.transform.transform_px_to_po((0., 0.)).0;
                         let start_y = k * start_x + m;
                         let start_point = (start_x, start_y);
 
-                        let end_x = self.transform.transform_px_to_po((w as f64, 0.)).0;
+                        let end_x = self.view.transform.transform_px_to_po((w as f64, 0.)).0;
                         let end_y = k * end_x + m;
                         let end_point = (end_x, end_y);
 
-                        let start_px = self.transform.transform_po_to_px(start_point);
-                        let end_px = self.transform.transform_po_to_px(end_point);
+                        let start_px = self.view.transform.transform_po_to_px(start_point);
+                        let end_px = self.view.transform.transform_po_to_px(end_point);
 
                         utils::line_aa(canvas, (start_px.0, start_px.1), (end_px.0, end_px.1));
                     }
                     geometry::ResolvedShape::LineUp(x) => {
-                        let x_px = self.transform.transform_po_to_px((x, 0.)).0;
+                        let x_px = self.view.transform.transform_po_to_px((x, 0.)).0;
                         utils::line_aa(canvas, (x_px, 0.), (x_px, h as f64));
                     }
                 }
@@ -74,7 +79,7 @@ impl DrawingBoard {
 
         for (id, point) in state.world.points.iter() {
             if let Some(rpoint) = state.world.resolve_point(point) {
-                let p_px = self.transform.transform_po_to_px(rpoint);
+                let p_px = self.view.transform.transform_po_to_px(rpoint);
 
                 let is_selected = state.current_tool.selected().contains_key(&gwrapper::ThingID::PointID(*id));
                 let mover = false;//state.current_tool.kind() == ToolKind::Mover;
@@ -106,11 +111,11 @@ impl DrawingBoard {
     pub fn mouse_down(&mut self, position: Point, _button: MouseButton) {
         let (x, y) = (position.x(), position.y());
 
-        let mouse_po = self.transform.transform_px_to_po((x as f64, y as f64));
+        let mouse_po = self.view.transform.transform_px_to_po((x as f64, y as f64));
 
         let state = &mut *self.state.lock().unwrap();
 
-        state.current_tool.click(&mut state.world, mouse_po);
+        state.current_tool.click(&mut state.world, &mut self.view, mouse_po);
 
         //match state.current_tool.kind() {
             //ToolKind::Point => {
@@ -188,8 +193,8 @@ impl Drawable for DrawingBoard {
     }
 
     fn update(&mut self, dt: f64) {
-        self.scrolling = self.scrolling * (0.01_f64).powf(dt);
-        self.transform.scale *= (0.1_f64).powf(self.scrolling);
+        self.view.scrolling = self.view.scrolling * (0.01_f64).powf(dt);
+        self.view.transform.scale *= (0.1_f64).powf(self.view.scrolling);
     }
 
     fn event(&mut self, event: Event) {
@@ -206,31 +211,31 @@ impl Drawable for DrawingBoard {
                 keycode: Some(Keycode::Space),
                 ..
             } => {
-                self.moving_screen = true;
+                self.view.moving_screen = true;
             }
             Event::KeyUp {
                 keycode: Some(Keycode::Space),
                 ..
             } => {
-                self.moving_screen = false;
+                self.view.moving_screen = false;
             }
             Event::MouseMotion { x, y, .. } => {
-                if self.moving_screen {
-                    let (dx, dy) = (x - self.mouse_last.x, y - self.mouse_last.y);
+                if self.view.moving_screen {
+                    let (dx, dy) = (x - self.view.mouse_last.x, y - self.view.mouse_last.y);
                     let (dtx, dty) = (
-                        dx as f64 / self.transform.scale,
-                        dy as f64 / self.transform.scale,
+                        dx as f64 / self.view.transform.scale,
+                        dy as f64 / self.view.transform.scale,
                     );
 
-                    self.transform.translation = (
-                        self.transform.translation.0 + dtx as f64,
-                        self.transform.translation.1 + dty as f64,
+                    self.view.transform.translation = (
+                        self.view.transform.translation.0 + dtx as f64,
+                        self.view.transform.translation.1 + dty as f64,
                     );
                 }
-                self.mouse_last = Point::new(x, y);
+                self.view.mouse_last = Point::new(x, y);
             }
             Event::MouseWheel { y, .. } => {
-                self.scrolling += -y as f64 / 300.;
+                self.view.scrolling += -y as f64 / 300.;
             }
             _ => {}
         }

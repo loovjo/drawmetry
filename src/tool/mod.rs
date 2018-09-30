@@ -1,10 +1,11 @@
 pub mod tools;
 
 use backend::{geometry, gwrapper};
+use drawing_board::View;
 use std::collections::HashMap;
 
 pub trait Tool: Send {
-    fn click(&mut self, ctx: &mut gwrapper::GWrapper, at: (f64, f64));
+    fn click(&mut self, ctx: &mut gwrapper::GWrapper, view: &mut View, at: (f64, f64));
     fn selected(&self) -> HashMap<gwrapper::ThingID, SelectedStatus>;
     fn kind(&self) -> ToolKind;
 }
