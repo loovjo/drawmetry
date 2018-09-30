@@ -88,3 +88,45 @@ impl Tool for PointLine {
         ToolKind::Line
     }
 }
+
+pub struct PointMover {
+    pub moving: Option<geometry::PointID>,
+}
+
+impl Tool for PointMover {
+    fn click(&mut self, ctx: &mut gwrapper::GWrapper, view: &mut View, at: (f64, f64)) {
+        if let Some((&id, _)) = get_closest(
+            at,
+            ctx.geometry
+                .points
+                .iter()
+                .filter(|(_, point)| {
+                    if let geometry::Point::Arbitrary(_) = point {
+                        true
+                    } else {
+                        false
+                    }
+                }).collect(),
+            |(_, point)| ctx.geometry.resolve_point(point).unwrap_or((0., 0.)),
+            None,
+        ) {
+            self.moving = Some(id);
+        }
+    }
+    fn selected(&self, ctx: &gwrapper::GWrapper) -> HashMap<gwrapper::ThingID, SelectedStatus> {
+        let mut res = HashMap::new();
+        for (id, point) in &ctx.geometry.points {
+            if let geometry::Point::Arbitrary(_) = point {
+                res.insert(gwrapper::ThingID::PointID(*id), SelectedStatus::Active);
+            }
+        }
+
+        if let Some(moving) = self.moving {
+            res.insert(gwrapper::ThingID::PointID(moving), SelectedStatus::Primary);
+        }
+        res
+    }
+    fn kind(&self) -> ToolKind {
+        ToolKind::Mover
+    }
+}

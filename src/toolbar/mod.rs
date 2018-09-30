@@ -15,6 +15,7 @@ lazy_static! {
         (ToolKind::Point, icons::TOOL_POINT.clone()),
         (ToolKind::Circle, icons::TOOL_CIRCLE.clone()),
         (ToolKind::Line, icons::TOOL_LINE.clone()),
+        (ToolKind::Mover, icons::TOOL_MOVER.clone()),
     ];
 }
 

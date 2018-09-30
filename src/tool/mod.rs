@@ -10,17 +10,18 @@ pub trait Tool: Send {
     fn kind(&self) -> ToolKind;
 }
 
+#[derive(Clone, PartialEq)]
 pub enum SelectedStatus {
     Primary,
     Active,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum ToolKind {
     Point,
     Circle,
     Line,
-    //Mover,
+    Mover,
 }
 
 impl ToolKind {
@@ -28,7 +29,8 @@ impl ToolKind {
         match self {
             ToolKind::Point => Box::new(tools::PointTool {}),
             ToolKind::Circle => Box::new(tools::PointCircle { center: None }),
-            ToolKind::Line => Box::new(tools::PointLine { edge: None }), //ToolKind::Mover => {}
+            ToolKind::Line => Box::new(tools::PointLine { edge: None }),
+            ToolKind::Mover => Box::new(tools::PointMover { moving: None }),
         }
     }
 }

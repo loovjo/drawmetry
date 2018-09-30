@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use super::backend::{geometry, gwrapper};
 use super::graphics::*;
 use super::icons;
-use super::tool::ToolKind;
+use super::tool::{SelectedStatus, ToolKind};
 use super::transform::Transform;
 
 use ytesrev::drawable::State;
@@ -173,6 +173,11 @@ impl Drawable for DrawingBoard {
             } => {
                 self.view.moving_screen = false;
             }
+            Event::MouseButtonUp { .. } => {
+                if state.current_tool.kind() == ToolKind::Mover {
+                    state.current_tool = state.current_tool.kind().into_tool();
+                }
+            }
             Event::MouseMotion { x, y, .. } => {
                 if self.view.moving_screen {
                     let (dx, dy) = (x - self.view.mouse_last.x, y - self.view.mouse_last.y);
@@ -185,6 +190,19 @@ impl Drawable for DrawingBoard {
                         self.view.transform.translation.0 + dtx as f64,
                         self.view.transform.translation.1 + dty as f64,
                     );
+                }
+                if state.current_tool.kind() == ToolKind::Mover {
+                    // Get the active point by inspecting Tool::selected
+                    let selected = state.current_tool.selected(&state.world);
+                    if let Some((gwrapper::ThingID::PointID(id), _)) =
+                        selected.iter().find(|(_, x)| x == &&SelectedStatus::Primary)
+                    {
+                        if let Some(point) = state.world.geometry.points.get_mut(id) {
+                            *point = geometry::create_arbitrary(
+                                self.view.transform.transform_px_to_po((x as f64, y as f64)),
+                            );
+                        }
+                    }
                 }
                 self.view.mouse_last = Point::new(x, y);
             }
