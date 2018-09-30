@@ -15,8 +15,8 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="circle_moving.svg"
-   inkscape:export-filename="/Users/jonathanloov/Dropbox/Teammajim/Rust/drawmetry/resources/circle_moving.png"
+   sodipodi:docname="circle_primary.svg"
+   inkscape:export-filename="/Users/jonathanloov/Documents/Programmering/Rust/drawmetry/resources/circle_primary.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90">
   <defs
@@ -28,14 +28,14 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1"
-     inkscape:cx="1.8312637"
-     inkscape:cy="0.011349826"
+     inkscape:zoom="22.627417"
+     inkscape:cx="0.43903562"
+     inkscape:cy="5.1988498"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
      units="px"
-     inkscape:window-width="1922"
+     inkscape:window-width="1920"
      inkscape:window-height="1040"
      inkscape:window-x="0"
      inkscape:window-y="0"
@@ -48,7 +48,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -58,10 +58,10 @@
      id="layer1"
      transform="translate(0,-1042.3622)">
     <circle
-       style="opacity:1;fill:#000000;fill-opacity:1;stroke:#00ff00;stroke-width:1.8175956;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+       style="opacity:1;fill:#000000;fill-opacity:1;stroke:#00ff00;stroke-width:2.68278599;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="path4136"
        cx="5"
-       cy="1047.3623"
-       r="4.0912023" />
+       cy="1047.3622"
+       r="3.658607" />
   </g>
 </svg>

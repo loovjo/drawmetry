@@ -80,24 +80,18 @@ impl DrawingBoard {
             if let Some(rpoint) = state.world.resolve_point(point) {
                 let p_px = self.view.transform.transform_po_to_px(rpoint);
 
-                let is_selected = state
+                let mut image = &*icons::CIRCLE_NORMAL;
+
+                if let Some(selected) = state
                     .current_tool
                     .selected(&state.world)
-                    .contains_key(&gwrapper::ThingID::PointID(*id));
-                let mover = false; //state.current_tool.kind() == ToolKind::Mover;
-
-                let image = match (is_selected, mover) {
-                    (true, false) => &*icons::CIRCLE_SELECT,
-                    (false, true) => {
-                        if let geometry::Point::Arbitrary(_) = point {
-                            &*icons::CIRCLE_MOVER
-                        } else {
-                            &*icons::CIRCLE_NORMAL
-                        }
+                    .get(&gwrapper::ThingID::PointID(*id))
+                {
+                    image = match selected {
+                        SelectedStatus::Primary => &*icons::CIRCLE_PRIMARY,
+                        SelectedStatus::Active => &*icons::CIRCLE_ACTIVE,
                     }
-                    (true, true) => &*icons::CIRCLE_MOVING,
-                    (false, _) => &*icons::CIRCLE_NORMAL,
-                };
+                }
 
                 image.draw(
                     canvas,
@@ -194,8 +188,9 @@ impl Drawable for DrawingBoard {
                 if state.current_tool.kind() == ToolKind::Mover {
                     // Get the active point by inspecting Tool::selected
                     let selected = state.current_tool.selected(&state.world);
-                    if let Some((gwrapper::ThingID::PointID(id), _)) =
-                        selected.iter().find(|(_, x)| x == &&SelectedStatus::Primary)
+                    if let Some((gwrapper::ThingID::PointID(id), _)) = selected
+                        .iter()
+                        .find(|(_, x)| x == &&SelectedStatus::Primary)
                     {
                         if let Some(point) = state.world.geometry.points.get_mut(id) {
                             *point = geometry::create_arbitrary(

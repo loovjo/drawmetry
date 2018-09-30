@@ -16,7 +16,6 @@ lazy_static! {
     pub static ref TOOL_MOVER: PngImage = load_image!("tool_mover.png");
     pub static ref TOOL_SELECTOR: PngImage = load_image!("tool_selector.png");
     pub static ref CIRCLE_NORMAL: PngImage = load_image!("circle_normal.png");
-    pub static ref CIRCLE_SELECT: PngImage = load_image!("circle_select.png");
-    pub static ref CIRCLE_MOVING: PngImage = load_image!("circle_moving.png");
-    pub static ref CIRCLE_MOVER: PngImage = load_image!("circle_mover.png");
+    pub static ref CIRCLE_PRIMARY: PngImage = load_image!("circle_primary.png");
+    pub static ref CIRCLE_ACTIVE: PngImage = load_image!("circle_active.png");
 }
