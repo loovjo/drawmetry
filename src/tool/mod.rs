@@ -18,7 +18,7 @@ pub enum SelectedStatus {
 #[derive(Clone)]
 pub enum ToolKind {
     Point,
-    //Circle,
+    Circle,
     //Line,
     //Mover,
 }
@@ -27,7 +27,7 @@ impl ToolKind {
     pub fn into_tool(self) -> Box<dyn Tool> {
         match self {
             ToolKind::Point => Box::new(tools::PointTool {}),
-            //ToolKind::Circle => {}
+            ToolKind::Circle => Box::new(tools::PointCircle { center: None }),
             //ToolKind::Line => {}
             //ToolKind::Mover => {}
         }

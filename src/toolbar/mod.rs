@@ -10,6 +10,13 @@ use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;
 use ytesrev::sdl2::mouse::MouseButton;
 
+lazy_static! {
+    pub static ref DEFAULT_TOOLS: Vec<(ToolKind, PngImage)> = vec![
+        (ToolKind::Point, icons::TOOL_POINT.clone()),
+        (ToolKind::Circle, icons::TOOL_CIRCLE.clone()),
+    ];
+}
+
 pub const TOOL_EDGE: u32 = 2;
 
 pub struct ToolBar {

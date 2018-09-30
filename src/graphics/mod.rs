@@ -6,7 +6,7 @@ use std::sync::{
 
 use backend::gwrapper::GWrapper;
 use drawing_board::DrawingBoard;
-use toolbar::ToolBar;
+use toolbar::{ToolBar, DEFAULT_TOOLS};
 use tool::{Tool, ToolKind, tools};
 use icons;
 use ytesrev::drawable::KnownSize;
@@ -37,7 +37,7 @@ pub fn create_layout(world: GWrapper) -> DScene {
     let state_arc_mutex = Arc::new(Mutex::new(state));
 
     let tool_bar = ToolBar {
-        tools: vec![(ToolKind::Point, icons::TOOL_POINT.clone())],
+        tools: DEFAULT_TOOLS.clone(),
         send_tool: send,
         selected: Some(0),
     };
