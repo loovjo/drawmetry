@@ -2,7 +2,6 @@ use std::sync::mpsc::Sender;
 
 use tool::ToolKind;
 
-use backend::geometry;
 use icons;
 
 use ytesrev::drawable::{DrawSettings, Drawable, KnownSize, Position, State};

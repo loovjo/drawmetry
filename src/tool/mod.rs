@@ -1,6 +1,6 @@
 pub mod tools;
 
-use backend::{geometry, gwrapper};
+use backend::gwrapper;
 use drawing_board::View;
 use std::collections::HashMap;
 

@@ -94,7 +94,7 @@ pub struct MoverTool {
 }
 
 impl Tool for MoverTool {
-    fn click(&mut self, ctx: &mut gwrapper::GWrapper, view: &mut View, at: (f64, f64)) {
+    fn click(&mut self, ctx: &mut gwrapper::GWrapper, _view: &mut View, at: (f64, f64)) {
         if let Some((&id, _)) = get_closest(
             at,
             ctx.geometry
