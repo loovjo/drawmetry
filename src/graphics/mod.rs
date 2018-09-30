@@ -111,8 +111,12 @@ impl Scene for DScene {
 }
 
 pub const STEPS_BY_RADIUS: f64 = 1.5;
+pub const MAX_STEPS: usize = 500;
 
 pub fn draw_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) -> Result<(), String> {
+    let (width, height) = canvas.window().size();
+    let (width, height) = (width as i32, height as i32);
+
     let points = draw_circle_points(pos, r);
 
     if points.len() == 0 {
@@ -122,6 +126,13 @@ pub fn draw_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) -> Resu
     let mut last = *points.last().unwrap();
 
     for point in points {
+        if last.x() < 0 && point.x() < 0
+            || last.y() < 0 && point.y() < 0
+            || last.x() > width && point.x() > width
+            || last.y() > height && point.y() > height
+        {
+            continue;
+        }
         utils::line_aa(
             canvas,
             (last.x() as f64, last.y() as f64),
@@ -135,6 +146,8 @@ pub fn draw_circle(canvas: &mut Canvas<Window>, pos: (f64, f64), r: f64) -> Resu
 
 pub fn draw_circle_points((x, y): (f64, f64), r: f64) -> Vec<Point> {
     let steps = (STEPS_BY_RADIUS as f64 * r) as usize;
+    let steps = steps.min(MAX_STEPS);
+
     let mut points = Vec::with_capacity(steps);
 
     for i in 0..steps {
