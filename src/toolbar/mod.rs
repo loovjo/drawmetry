@@ -14,6 +14,7 @@ lazy_static! {
     pub static ref DEFAULT_TOOLS: Vec<(ToolKind, PngImage)> = vec![
         (ToolKind::Point, icons::TOOL_POINT.clone()),
         (ToolKind::Circle, icons::TOOL_CIRCLE.clone()),
+        (ToolKind::Line, icons::TOOL_LINE.clone()),
     ];
 }
 

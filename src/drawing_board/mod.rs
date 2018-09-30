@@ -30,19 +30,18 @@ impl DrawingBoard {
         DrawingBoard {
             state,
             view: View {
-                transform: Transform::new_from_winsize((WINDOW_SIZE.0 as f64, WINDOW_SIZE.1 as f64)),
+                transform: Transform::new_from_winsize((
+                    WINDOW_SIZE.0 as f64,
+                    WINDOW_SIZE.1 as f64,
+                )),
                 mouse_last: Point::new(0, 0),
                 moving_screen: false,
                 scrolling: 0.,
-            }
+            },
         }
     }
 
-    fn try_draw(
-        &self,
-        canvas: &mut Canvas<Window>,
-        settings: DrawSettings,
-    ) -> Result<(), String> {
+    fn try_draw(&self, canvas: &mut Canvas<Window>, settings: DrawSettings) -> Result<(), String> {
         let state = self.state.lock().unwrap();
 
         canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
@@ -81,8 +80,11 @@ impl DrawingBoard {
             if let Some(rpoint) = state.world.resolve_point(point) {
                 let p_px = self.view.transform.transform_po_to_px(rpoint);
 
-                let is_selected = state.current_tool.selected().contains_key(&gwrapper::ThingID::PointID(*id));
-                let mover = false;//state.current_tool.kind() == ToolKind::Mover;
+                let is_selected = state
+                    .current_tool
+                    .selected(&state.world)
+                    .contains_key(&gwrapper::ThingID::PointID(*id));
+                let mover = false; //state.current_tool.kind() == ToolKind::Mover;
 
                 let image = match (is_selected, mover) {
                     (true, false) => &*icons::CIRCLE_SELECT,
@@ -115,57 +117,9 @@ impl DrawingBoard {
 
         let state = &mut *self.state.lock().unwrap();
 
-        state.current_tool.click(&mut state.world, &mut self.view, mouse_po);
-
-        //match state.current_tool.kind() {
-            //ToolKind::Point => {
-                //let point = get_closest(
-                    //mouse_po,
-                    //state.world.get_potential_points(),
-                    //|point| state.world.resolve_point(point).unwrap_or((0., 0.)),
-                    //Some(100. / self.transform.scale),
-                //).unwrap_or(geometry::create_arbitrary(mouse_po));
-
-                //state.world.add_point(point);
-            //}
-            //_ => {
-                //if let Some((&id, _)) = get_closest(
-                    //mouse_po,
-                    //state.world.points.iter().collect(),
-                    //|(_, point)| state.world.resolve_point(point).unwrap_or((0., 0.)),
-                    //Some(100. / self.transform.scale),
-                //) {
-                    //if state.current_tool.kind == ToolKind::Mover {
-                        //if let Some(geometry::Point::Arbitrary(_)) = state.world.points.get(&id) {
-                        //} else {
-                            //return;
-                        //}
-                    //}
-                    //state.current_tool.selected.push(id);
-                    //if state.current_tool.selected.len()
-                        //>= state.current_tool.kind.needed_selected()
-                    //{
-                        //match state.current_tool.kind {
-                            //ToolKind::Line => {
-                                //state.world.add_shape(geometry::Shape::Line(
-                                    //state.current_tool.selected[0],
-                                    //state.current_tool.selected[1],
-                                //));
-                                //state.current_tool.selected.clear();
-                            //}
-                            //ToolKind::Circle => {
-                                //state.world.add_shape(geometry::Shape::Circle(
-                                    //state.current_tool.selected[0],
-                                    //state.current_tool.selected[1],
-                                //));
-                                //state.current_tool.selected.clear();
-                            //}
-                            //_ => {}
-                        //}
-                    //}
-                //}
-            //}
-        //}
+        state
+            .current_tool
+            .click(&mut state.world, &mut self.view, mouse_po);
     }
 }
 
