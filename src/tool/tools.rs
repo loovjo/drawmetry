@@ -25,11 +25,11 @@ impl Tool for PointTool {
     }
 }
 
-pub struct PointCircle {
+pub struct CircleTool {
     pub center: Option<geometry::PointID>,
 }
 
-impl Tool for PointCircle {
+impl Tool for CircleTool {
     fn click(&mut self, ctx: &mut gwrapper::GWrapper, view: &mut View, at: (f64, f64)) {
         if let Some((&id, _)) = get_closest(
             at,
@@ -57,11 +57,11 @@ impl Tool for PointCircle {
     }
 }
 
-pub struct PointLine {
+pub struct LineTool {
     pub edge: Option<geometry::PointID>,
 }
 
-impl Tool for PointLine {
+impl Tool for LineTool {
     fn click(&mut self, ctx: &mut gwrapper::GWrapper, view: &mut View, at: (f64, f64)) {
         if let Some((&id, _)) = get_closest(
             at,
@@ -89,11 +89,11 @@ impl Tool for PointLine {
     }
 }
 
-pub struct PointMover {
+pub struct MoverTool {
     pub moving: Option<geometry::PointID>,
 }
 
-impl Tool for PointMover {
+impl Tool for MoverTool {
     fn click(&mut self, ctx: &mut gwrapper::GWrapper, view: &mut View, at: (f64, f64)) {
         if let Some((&id, _)) = get_closest(
             at,

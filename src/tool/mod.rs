@@ -28,9 +28,9 @@ impl ToolKind {
     pub fn into_tool(self) -> Box<dyn Tool> {
         match self {
             ToolKind::Point => Box::new(tools::PointTool {}),
-            ToolKind::Circle => Box::new(tools::PointCircle { center: None }),
-            ToolKind::Line => Box::new(tools::PointLine { edge: None }),
-            ToolKind::Mover => Box::new(tools::PointMover { moving: None }),
+            ToolKind::Circle => Box::new(tools::CircleTool { center: None }),
+            ToolKind::Line => Box::new(tools::LineTool { edge: None }),
+            ToolKind::Mover => Box::new(tools::MoverTool { moving: None }),
         }
     }
 }
