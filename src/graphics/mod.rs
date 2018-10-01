@@ -62,6 +62,9 @@ impl Scene for DScene {
                 (*callback.function)(state);
             }
         }
+
+        let tb_height = self.inner.first.height();
+        self.inner.amount = Box::new(move |_| tb_height as u32);
     }
 
     fn draw(&self, canvas: &mut Canvas<Window>, settings: DrawSettings) {

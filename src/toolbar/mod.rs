@@ -36,7 +36,7 @@ pub struct ToolBar {
 }
 
 impl ToolBar {
-    pub fn mouse_down(&mut self, position: Point, _button: MouseButton) {
+    pub fn mouse_down(&mut self, position: Point, mbutton: MouseButton) {
         for (i, (rect, (tool, _))) in self.tool_rects().iter().zip(self.tools.iter()).enumerate() {
             if rect.contains_point(position) {
                 let callback = (*tool.0)();
@@ -46,6 +46,16 @@ impl ToolBar {
                 }
 
                 self.send_tool.send(callback).expect("Couldn't send tool!");
+            }
+        }
+
+        if let Some((tool, _)) = self.selected.and_then(|x| self.tools.get(x)) {
+            let button = (*tool.0)();
+            if let Some(mut subbar) = button.subtoolbar {
+                subbar.mouse_down(
+                    Point::new(position.x(), position.y() - self.content_height() as i32),
+                    mbutton,
+                );
             }
         }
     }
@@ -104,11 +114,7 @@ impl ToolBar {
                 ))?;
             }
 
-            image.draw(
-                canvas,
-                &Position::TopLeftCorner(rect.top_left()),
-                settings,
-            );
+            image.draw(canvas, &Position::TopLeftCorner(rect.top_left()), settings);
         }
 
         Ok(())
