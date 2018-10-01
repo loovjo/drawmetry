@@ -53,10 +53,15 @@ impl ToolBar {
     pub fn mouse_down(&mut self, position: Point, _button: MouseButton) {
         for (i, (rect, (tool, _))) in self.tool_rects().iter().zip(self.tools.iter()).enumerate() {
             if rect.contains_point(position) {
+                let callback = (*tool.0)();
+
+                if callback.select {
+                    self.selected = Some(i);
+                }
+
                 self.send_tool
-                    .send((*tool.0)())
+                    .send(callback)
                     .expect("Couldn't send tool!");
-                self.selected = Some(i);
             }
         }
     }
