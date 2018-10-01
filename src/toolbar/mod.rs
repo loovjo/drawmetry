@@ -1,5 +1,5 @@
 mod default;
-pub use self::default::default_tools;
+pub use self::default::default_toolbar;
 
 use std::sync::mpsc::Sender;
 
