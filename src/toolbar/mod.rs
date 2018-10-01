@@ -1,3 +1,6 @@
+mod default;
+pub use self::default::default_tools;
+
 use std::sync::mpsc::Sender;
 
 use graphics::DState;
@@ -9,43 +12,24 @@ use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;
 use ytesrev::sdl2::mouse::MouseButton;
 
-pub fn default_tools() -> Vec<(MakeCallback, PngImage)> {
-    vec![
-        (cb_set_tool(ToolKind::Point), icons::TOOL_POINT.clone()),
-        (cb_set_tool(ToolKind::Circle), icons::TOOL_CIRCLE.clone()),
-        (cb_set_tool(ToolKind::Line), icons::TOOL_LINE.clone()),
-        (cb_set_tool(ToolKind::Mover), icons::TOOL_MOVER.clone()),
-    ]
-}
-
-fn cb_set_tool(kind: ToolKind) -> MakeCallback {
-    MakeCallback(Box::new(move || {
-        let kind = kind.clone();
-        Callback {
-            function: Box::new(move |state| state.current_tool = kind.clone().into_tool()),
-            select: true,
-        }
-    }))
-}
-
 pub const TOOL_EDGE: u32 = 2;
 
-pub struct Callback {
+pub struct Button {
     pub function: Box<Fn(&mut DState)>,
     pub select: bool,
 }
 
-unsafe impl Send for Callback {}
-unsafe impl Sync for Callback {}
+unsafe impl Send for Button {}
+unsafe impl Sync for Button {}
 
-pub struct MakeCallback(Box<Fn() -> Callback>);
+pub struct MakeButton(Box<Fn() -> Button>);
 
-unsafe impl Send for MakeCallback {}
-unsafe impl Sync for MakeCallback {}
+unsafe impl Send for MakeButton {}
+unsafe impl Sync for MakeButton {}
 
 pub struct ToolBar {
-    pub tools: Vec<(MakeCallback, PngImage)>,
-    pub send_tool: Sender<Callback>,
+    pub tools: Vec<(MakeButton, PngImage)>,
+    pub send_tool: Sender<Button>,
     pub selected: Option<usize>,
 }
 
@@ -59,9 +43,7 @@ impl ToolBar {
                     self.selected = Some(i);
                 }
 
-                self.send_tool
-                    .send(callback)
-                    .expect("Couldn't send tool!");
+                self.send_tool.send(callback).expect("Couldn't send tool!");
             }
         }
     }

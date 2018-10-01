@@ -7,7 +7,7 @@ use std::sync::{
 use backend::gwrapper::GWrapper;
 use drawing_board::DrawingBoard;
 use tool::{Tool, ToolKind};
-use toolbar::{ToolBar, default_tools, Callback};
+use toolbar::{ToolBar, default_tools, Button};
 use ytesrev::drawable::KnownSize;
 use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;
@@ -22,7 +22,7 @@ pub struct DState {
 pub struct DScene {
     inner: Split<ToolBar, DrawingBoard>,
     state: Arc<Mutex<DState>>,
-    tool_change: Receiver<Callback>,
+    tool_change: Receiver<Button>,
 }
 
 pub fn create_layout(world: GWrapper) -> DScene {
@@ -31,7 +31,7 @@ pub fn create_layout(world: GWrapper) -> DScene {
         current_tool: ToolKind::Point.into_tool(),
     };
 
-    let (send, recv) = channel::<Callback>();
+    let (send, recv) = channel::<Button>();
 
     let state_arc_mutex = Arc::new(Mutex::new(state));
 
