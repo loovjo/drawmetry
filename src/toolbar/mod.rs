@@ -11,12 +11,14 @@ use ytesrev::drawable::{DrawSettings, Drawable, KnownSize, Position, State};
 use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;
 use ytesrev::sdl2::mouse::MouseButton;
+use ytesrev::sdl2::rect::Rect;
 
 pub const TOOL_EDGE: u32 = 2;
 
 pub struct Button {
     pub function: Box<Fn(&mut DState)>,
     pub select: bool,
+    pub subtoolbar: Option<ToolBar>,
 }
 
 unsafe impl Send for Button {}
@@ -66,27 +68,37 @@ impl ToolBar {
         res
     }
 
-    fn draw_menu(&self, canvas: &mut Canvas<Window>, settings: DrawSettings) -> Result<(), String> {
-        let width = canvas.window().size().0;
-
+    fn draw_menu(
+        &self,
+        canvas: &mut Canvas<Window>,
+        at: Rect,
+        settings: DrawSettings,
+    ) -> Result<(), String> {
         canvas.set_draw_color(Color::RGBA(38, 62, 99, 255));
-        canvas.fill_rect(Rect::new(0, 0, width, self.height() as u32))?;
+        canvas.fill_rect(at)?;
         canvas.set_draw_color(Color::RGBA(162, 184, 219, 255));
         canvas.fill_rect(Rect::new(
-            TOOL_EDGE as i32,
-            TOOL_EDGE as i32,
-            width - TOOL_EDGE * 2,
-            self.height() as u32 - TOOL_EDGE * 2,
+            at.left() + TOOL_EDGE as i32,
+            at.top() + TOOL_EDGE as i32,
+            at.width() - TOOL_EDGE * 2,
+            at.height() - TOOL_EDGE * 2,
         ))?;
 
         for (i, (rect, (_, image))) in self.tool_rects().iter().zip(self.tools.iter()).enumerate() {
+            let rect = Rect::new(
+                at.left() + rect.left(),
+                at.top() + rect.top(),
+                rect.width(),
+                rect.height(),
+            );
+
             if Some(i) == self.selected {
                 canvas.set_draw_color(Color::RGBA(140, 120, 100, 255));
-                canvas.fill_rect(*rect)?;
+                canvas.fill_rect(rect)?;
                 canvas.set_draw_color(Color::RGBA(245, 230, 230, 255));
                 canvas.fill_rect(Rect::new(
-                    rect.x() + 2,
-                    rect.y() + 2,
+                    rect.x() + TOOL_EDGE as i32,
+                    rect.y() + TOOL_EDGE as i32,
                     rect.width() as u32 - 4,
                     rect.height() as u32 - 4,
                 ))?;
@@ -94,12 +106,21 @@ impl ToolBar {
 
             image.draw(
                 canvas,
-                &Position::TopLeftCorner(Point::new(rect.x(), rect.y())),
+                &Position::TopLeftCorner(rect.top_left()),
                 settings,
             );
         }
 
         Ok(())
+    }
+
+    fn content_height(&self) -> usize {
+        self.tool_rects()
+            .iter()
+            .map(|x| x.bottom())
+            .max()
+            .unwrap_or(0) as usize
+            + TOOL_EDGE as usize
     }
 }
 
@@ -118,9 +139,28 @@ impl Drawable for ToolBar {
         State::Working
     }
 
-    fn draw(&self, canvas: &mut Canvas<Window>, _position: &Position, settings: DrawSettings) {
-        self.draw_menu(canvas, settings)
+    fn draw(&self, canvas: &mut Canvas<Window>, position: &Position, settings: DrawSettings) {
+        let rect = Rect::new(0, 0, canvas.window().size().0, self.content_height() as u32);
+
+        self.draw_menu(canvas, rect, settings)
             .expect("Can't draw toolbar");
+
+        if let Some((tool, _)) = self.selected.and_then(|x| self.tools.get(x)) {
+            let button = (*tool.0)();
+            if let Some(subbar) = button.subtoolbar {
+                subbar
+                    .draw_menu(
+                        canvas,
+                        Rect::new(
+                            rect.left(),
+                            rect.top() + rect.height() as i32,
+                            rect.width(),
+                            rect.height(),
+                        ),
+                        settings,
+                    ).expect("Can't draw toolbar");
+            }
+        }
     }
 
     fn update(&mut self, _dt: f64) {}
@@ -138,11 +178,12 @@ impl KnownSize for ToolBar {
     }
 
     fn height(&self) -> usize {
-        self.tool_rects()
-            .iter()
-            .map(|x| x.bottom())
-            .max()
-            .unwrap_or(0) as usize
-            + TOOL_EDGE as usize
+        if let Some((tool, _)) = self.selected.and_then(|x| self.tools.get(x)) {
+            let button = (*tool.0)();
+            if let Some(subbar) = button.subtoolbar {
+                return self.content_height() + subbar.height();
+            }
+        }
+        self.content_height()
     }
 }
