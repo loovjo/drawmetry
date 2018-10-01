@@ -7,7 +7,7 @@ use std::sync::{
 use backend::gwrapper::GWrapper;
 use drawing_board::DrawingBoard;
 use tool::{Tool, ToolKind};
-use toolbar::{ToolBar, DEFAULT_TOOLS};
+use toolbar::{ToolBar, default_tools, Callback};
 use ytesrev::drawable::KnownSize;
 use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;
@@ -22,7 +22,7 @@ pub struct DState {
 pub struct DScene {
     inner: Split<ToolBar, DrawingBoard>,
     state: Arc<Mutex<DState>>,
-    tool_change: Receiver<ToolKind>,
+    tool_change: Receiver<Callback>,
 }
 
 pub fn create_layout(world: GWrapper) -> DScene {
@@ -31,12 +31,12 @@ pub fn create_layout(world: GWrapper) -> DScene {
         current_tool: ToolKind::Point.into_tool(),
     };
 
-    let (send, recv) = channel::<ToolKind>();
+    let (send, recv) = channel::<Callback>();
 
     let state_arc_mutex = Arc::new(Mutex::new(state));
 
     let tool_bar = ToolBar {
-        tools: DEFAULT_TOOLS.clone(),
+        tools: default_tools(),
         send_tool: send,
         selected: Some(0),
     };
@@ -60,9 +60,9 @@ impl Scene for DScene {
         self.inner.first.update(dt);
         self.inner.second.update(dt);
 
-        for tool_kind in self.tool_change.try_iter() {
+        for callback in self.tool_change.try_iter() {
             if let Ok(ref mut state) = self.state.lock() {
-                state.current_tool = tool_kind.into_tool();
+                (*callback.function)(state);
             }
         }
     }

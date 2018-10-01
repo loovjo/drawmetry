@@ -1,28 +1,51 @@
 use std::sync::mpsc::Sender;
 
-use tool::ToolKind;
-
+use graphics::DState;
 use icons;
+use tool::ToolKind;
 
 use ytesrev::drawable::{DrawSettings, Drawable, KnownSize, Position, State};
 use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;
 use ytesrev::sdl2::mouse::MouseButton;
 
-lazy_static! {
-    pub static ref DEFAULT_TOOLS: Vec<(ToolKind, PngImage)> = vec![
-        (ToolKind::Point, icons::TOOL_POINT.clone()),
-        (ToolKind::Circle, icons::TOOL_CIRCLE.clone()),
-        (ToolKind::Line, icons::TOOL_LINE.clone()),
-        (ToolKind::Mover, icons::TOOL_MOVER.clone()),
-    ];
+pub fn default_tools() -> Vec<(MakeCallback, PngImage)> {
+    vec![
+        (cb_set_tool(ToolKind::Point), icons::TOOL_POINT.clone()),
+        (cb_set_tool(ToolKind::Circle), icons::TOOL_CIRCLE.clone()),
+        (cb_set_tool(ToolKind::Line), icons::TOOL_LINE.clone()),
+        (cb_set_tool(ToolKind::Mover), icons::TOOL_MOVER.clone()),
+    ]
+}
+
+fn cb_set_tool(kind: ToolKind) -> MakeCallback {
+    MakeCallback(Box::new(move || {
+        let kind = kind.clone();
+        Callback {
+            function: Box::new(move |state| state.current_tool = kind.clone().into_tool()),
+            select: true,
+        }
+    }))
 }
 
 pub const TOOL_EDGE: u32 = 2;
 
+pub struct Callback {
+    pub function: Box<Fn(&mut DState)>,
+    pub select: bool,
+}
+
+unsafe impl Send for Callback {}
+unsafe impl Sync for Callback {}
+
+pub struct MakeCallback(Box<Fn() -> Callback>);
+
+unsafe impl Send for MakeCallback {}
+unsafe impl Sync for MakeCallback {}
+
 pub struct ToolBar {
-    pub tools: Vec<(ToolKind, PngImage)>,
-    pub send_tool: Sender<ToolKind>,
+    pub tools: Vec<(MakeCallback, PngImage)>,
+    pub send_tool: Sender<Callback>,
     pub selected: Option<usize>,
 }
 
@@ -31,7 +54,7 @@ impl ToolBar {
         for (i, (rect, (tool, _))) in self.tool_rects().iter().zip(self.tools.iter()).enumerate() {
             if rect.contains_point(position) {
                 self.send_tool
-                    .send(tool.clone())
+                    .send((*tool.0)())
                     .expect("Couldn't send tool!");
                 self.selected = Some(i);
             }
