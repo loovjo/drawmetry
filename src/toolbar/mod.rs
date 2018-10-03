@@ -145,7 +145,7 @@ impl Drawable for ToolBar {
         State::Working
     }
 
-    fn draw(&self, canvas: &mut Canvas<Window>, position: &Position, settings: DrawSettings) {
+    fn draw(&self, canvas: &mut Canvas<Window>, _position: &Position, settings: DrawSettings) {
         let rect = Rect::new(0, 0, canvas.window().size().0, self.content_height() as u32);
 
         self.draw_menu(canvas, rect, settings)
