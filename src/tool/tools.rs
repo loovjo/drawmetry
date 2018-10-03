@@ -199,7 +199,7 @@ impl Tool for Selector {
         let mut res = HashMap::new();
 
         for x in &self.selected {
-            res.insert(*x, SelectedStatus::Active);
+            res.insert(*x, SelectedStatus::Primary);
         }
 
         res

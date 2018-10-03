@@ -1,5 +1,6 @@
 use super::*;
 use backend::gwrapper;
+use tool::SelectedStatus;
 
 pub fn default_toolbar(send: Sender<Button>) -> ToolBar {
     let tools = vec![
@@ -57,7 +58,14 @@ fn make_selector(send: Sender<Button>) -> MakeButton {
 
 fn make_vis_changer(status: gwrapper::Visibility) -> MakeButton {
     MakeButton(Box::new(move || Button {
-        function: Box::new(move |_| println!("Making thing {:?}", status)),
+        function: Box::new(move |state| {
+            for (id, sel) in state.current_tool.selected(&state.world) {
+                if sel == SelectedStatus::Primary {
+                    println!("{:?}ing {:?}", status, id);
+                    state.world.visibility.insert(id, status);
+                }
+            }
+        }),
         select: false,
         subtoolbar: None,
     }))

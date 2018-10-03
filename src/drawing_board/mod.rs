@@ -23,6 +23,7 @@ pub struct View {
     pub mouse_last: Point,
     pub moving_screen: bool,
     pub scrolling: f64,
+    pub show_hidden: bool,
 }
 
 impl DrawingBoard {
@@ -37,6 +38,7 @@ impl DrawingBoard {
                 mouse_last: Point::new(0, 0),
                 moving_screen: false,
                 scrolling: 0.,
+                show_hidden: true,
             },
         }
     }
@@ -47,7 +49,17 @@ impl DrawingBoard {
         let (w, h) = canvas.window().size();
 
         for (id, obj) in &state.world.shapes {
-            canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
+            let mut alpha = 255;
+            if let Some(gwrapper::Visibility::Hidden) =
+                state.world.visibility.get(&gwrapper::ThingID::ShapeID(*id))
+            {
+                if !self.view.show_hidden {
+                    continue;
+                }
+                alpha = 64;
+            }
+
+            canvas.set_draw_color(Color::RGBA(0, 0, 0, alpha));
             if let Some(selected) = state
                 .current_tool
                 .selected(&state.world)
@@ -57,8 +69,10 @@ impl DrawingBoard {
                     SelectedStatus::Primary => (0, 255, 0),
                     SelectedStatus::Active => (128, 195, 255),
                 };
-                canvas.set_draw_color(Color::RGBA(col.0, col.1, col.2, 255));
+                canvas.set_draw_color(Color::RGBA(col.0, col.1, col.2, alpha));
             }
+
+
             if let Some(ro) = state.world.resolve_shape(obj) {
                 match ro {
                     geometry::ResolvedShape::Circle(center, rad) => {
