@@ -191,7 +191,6 @@ impl Tool for Selector {
         };
 
         if let Some((_, (id, _))) = get_best(objects, dist_fn) {
-            println!("Best: {:?}", id);
             self.selected.push(id);
         }
     }
