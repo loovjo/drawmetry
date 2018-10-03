@@ -1,7 +1,9 @@
+use std::f64;
+
 use super::*;
 
 use backend::{geometry, gwrapper};
-use graphics::get_closest;
+use graphics::{get_best, get_closest};
 use std::collections::HashMap;
 
 pub struct PointTool {}
@@ -128,5 +130,81 @@ impl Tool for MoverTool {
     }
     fn kind(&self) -> ToolKind {
         ToolKind::Mover
+    }
+}
+
+pub struct Selector {
+    pub selected: Vec<gwrapper::ThingID>,
+}
+
+impl Tool for Selector {
+    fn click(&mut self, ctx: &mut gwrapper::GWrapper, view: &mut View, at: (f64, f64)) {
+        let mut objects = Vec::<(gwrapper::ThingID, gwrapper::Thing)>::new();
+
+        for (id, point) in &ctx.geometry.points {
+            objects.push((
+                gwrapper::ThingID::PointID(*id),
+                gwrapper::Thing::Point(*point),
+            ));
+        }
+        for (id, shape) in &ctx.geometry.shapes {
+            objects.push((
+                gwrapper::ThingID::ShapeID(*id),
+                gwrapper::Thing::Shape(*shape),
+            ));
+        }
+
+        let point_bonus = 25. / view.transform.scale;
+
+        let dist_fn = |(_, obj): &(gwrapper::ThingID, gwrapper::Thing)| match obj {
+            gwrapper::Thing::Point(p) => {
+                if let Some(pos) = ctx.geometry.resolve_point(&p) {
+                    let (dx, dy) = (pos.0 - at.0, pos.1 - at.1);
+                    (dx * dx + dy * dy).sqrt()
+                } else {
+                    f64::MAX
+                }
+            }
+            gwrapper::Thing::Shape(s) => {
+                let shape = ctx.geometry.resolve_shape(&s);
+                match shape {
+                    Some(geometry::ResolvedShape::Circle(pos, rad)) => {
+                        let (dx, dy) = (pos.0 - at.0, pos.1 - at.1);
+                        let dist = (dx * dx + dy * dy).sqrt();
+                        (dist - rad).abs() + point_bonus
+                    }
+                    Some(geometry::ResolvedShape::Line(k, m)) => {
+                        let k_ = -1. / k;
+                        let m_ = at.1 - k_ * at.0;
+
+                        let int_x = (m - m_) / (k_ - k);
+                        let int_y = k * int_x + m;
+
+                        let (dx, dy) = (int_x - at.0, int_y - at.1);
+
+                        (dx * dx + dy * dy).sqrt() + point_bonus
+                    }
+                    Some(geometry::ResolvedShape::LineUp(k)) => (k - at.0).abs() + point_bonus,
+                    None => f64::MAX,
+                }
+            }
+        };
+
+        if let Some((_, (id, _))) = get_best(objects, dist_fn) {
+            println!("Best: {:?}", id);
+            self.selected.push(id);
+        }
+    }
+    fn selected(&self, _ctx: &gwrapper::GWrapper) -> HashMap<gwrapper::ThingID, SelectedStatus> {
+        let mut res = HashMap::new();
+
+        for x in &self.selected {
+            res.insert(*x, SelectedStatus::Active);
+        }
+
+        res
+    }
+    fn kind(&self) -> ToolKind {
+        ToolKind::Selector
     }
 }

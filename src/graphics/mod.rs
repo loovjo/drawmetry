@@ -7,7 +7,7 @@ use std::sync::{
 use backend::gwrapper::GWrapper;
 use drawing_board::DrawingBoard;
 use tool::{Tool, ToolKind};
-use toolbar::{ToolBar, default_toolbar, Button};
+use toolbar::{default_toolbar, Button, ToolBar};
 use ytesrev::drawable::KnownSize;
 use ytesrev::prelude::*;
 use ytesrev::sdl2::event::Event;
@@ -26,17 +26,15 @@ pub struct DScene {
 }
 
 pub fn create_layout(world: GWrapper) -> DScene {
-    let state = DState {
-        world: world,
-        current_tool: ToolKind::Point.into_tool(),
-    };
-
     let (send, recv) = channel::<Button>();
-
-    let state_arc_mutex = Arc::new(Mutex::new(state));
-
     let tool_bar = default_toolbar(send);
 
+    let state = DState {
+        world: world,
+        current_tool: ToolKind::Selector.into_tool(),
+    };
+
+    let state_arc_mutex = Arc::new(Mutex::new(state));
     let drawing_board = DrawingBoard::new(state_arc_mutex.clone());
 
     DScene {
@@ -155,30 +153,46 @@ pub fn draw_circle_points((x, y): (f64, f64), r: f64) -> Vec<Point> {
     points
 }
 
+pub fn get_best<T, F: Fn(&T) -> f64>(objs: Vec<T>, f: F) -> Option<(f64, T)> {
+    let mut best: Option<(f64, T)> = None;
+
+    for obj in objs {
+        let dist = f(&obj);
+
+        if let Some((bdist, _)) = best {
+            if dist < bdist {
+                best = Some((dist, obj));
+            }
+        } else {
+            best = Some((dist, obj));
+        }
+    }
+
+    best
+}
+
 pub fn get_closest<T, F: Fn(&T) -> (f64, f64)>(
     to: (f64, f64),
     objs: Vec<T>,
     f: F,
     max: Option<f64>,
 ) -> Option<T> {
-    let mut best: Option<(f64, T)> = None;
-    for obj in objs {
-        let pos = f(&obj);
-
+    let dist_fn = |obj: &T| -> f64 {
+        let pos = f(obj);
         let (dx, dy) = (pos.0 - to.0, pos.1 - to.1);
-        let dist_sq = dx * dx + dy * dy;
-
-        if max.map(|x| dist_sq > x * x).unwrap_or(false) {
-            continue;
-        }
-        if let Some((cur_dist, _)) = best {
-            if dist_sq < cur_dist {
-                best = Some((dist_sq, obj));
+        dx * dx + dy * dy
+    };
+    if let Some((dist, closest)) = get_best(objs, dist_fn) {
+        if let Some(max) = max {
+            if dist < max {
+                Some(closest)
+            } else {
+                None
             }
         } else {
-            best = Some((dist_sq, obj));
+            Some(closest)
         }
+    } else {
+        None
     }
-
-    best.map(|x| x.1)
 }

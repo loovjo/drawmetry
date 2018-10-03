@@ -31,8 +31,14 @@ fn cb_set_tool(kind: ToolKind) -> MakeButton {
 fn make_selector(send: Sender<Button>) -> MakeButton {
     MakeButton(Box::new(move || {
         let tools = vec![
-            (make_vis_changer(gwrapper::Visibility::Visible), icons::SELECTED_SHOW.clone()),
-            (make_vis_changer(gwrapper::Visibility::Hidden), icons::SELECTED_HIDE.clone()),
+            (
+                make_vis_changer(gwrapper::Visibility::Visible),
+                icons::SELECTED_SHOW.clone(),
+            ),
+            (
+                make_vis_changer(gwrapper::Visibility::Hidden),
+                icons::SELECTED_HIDE.clone(),
+            ),
         ];
 
         let subtoolbar = ToolBar {
@@ -42,7 +48,7 @@ fn make_selector(send: Sender<Button>) -> MakeButton {
         };
 
         Button {
-            function: Box::new(move |_| {}),
+            function: Box::new(move |state| state.current_tool = ToolKind::Selector.into_tool()),
             select: true,
             subtoolbar: Some(subtoolbar),
         }

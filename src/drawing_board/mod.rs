@@ -44,10 +44,21 @@ impl DrawingBoard {
     fn try_draw(&self, canvas: &mut Canvas<Window>, settings: DrawSettings) -> Result<(), String> {
         let state = self.state.lock().unwrap();
 
-        canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
         let (w, h) = canvas.window().size();
 
-        for obj in state.world.shapes.values() {
+        for (id, obj) in &state.world.shapes {
+            canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
+            if let Some(selected) = state
+                .current_tool
+                .selected(&state.world)
+                .get(&gwrapper::ThingID::ShapeID(*id))
+            {
+                let col = match selected {
+                    SelectedStatus::Primary => (0, 255, 0),
+                    SelectedStatus::Active => (128, 195, 255),
+                };
+                canvas.set_draw_color(Color::RGBA(col.0, col.1, col.2, 255));
+            }
             if let Some(ro) = state.world.resolve_shape(obj) {
                 match ro {
                     geometry::ResolvedShape::Circle(center, rad) => {

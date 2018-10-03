@@ -22,6 +22,7 @@ pub enum ToolKind {
     Circle,
     Line,
     Mover,
+    Selector,
 }
 
 impl ToolKind {
@@ -31,6 +32,7 @@ impl ToolKind {
             ToolKind::Circle => Box::new(tools::CircleTool { center: None }),
             ToolKind::Line => Box::new(tools::LineTool { edge: None }),
             ToolKind::Mover => Box::new(tools::MoverTool { moving: None }),
+            ToolKind::Selector => Box::new(tools::Selector { selected: vec![] }),
         }
     }
 }
