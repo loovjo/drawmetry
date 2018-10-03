@@ -44,8 +44,7 @@ pub enum Visibility {
 
 pub struct GWrapper {
     pub geometry: geometry::Geometry,
-    pub groups: HashMap<ThingID, Group>,
-    pub visibility: HashMap<Group, Visibility>,
+    pub visibility: HashMap<ThingID, Visibility>,
 }
 
 impl Deref for GWrapper {
@@ -65,19 +64,7 @@ impl GWrapper {
     pub fn new(geometry: geometry::Geometry) -> GWrapper {
         GWrapper {
             geometry,
-            groups: HashMap::new(),
             visibility: HashMap::new(),
         }
-    }
-
-    pub fn get_group(&self, id: &ThingID) -> Group {
-        *self.groups.get(id).unwrap_or(&DEFAULT_GROUP)
-    }
-
-    pub fn get_visibility(&self, id: &ThingID) -> Visibility {
-        *self
-            .visibility
-            .get(&self.get_group(id))
-            .unwrap_or(&Visibility::Visible)
     }
 }
