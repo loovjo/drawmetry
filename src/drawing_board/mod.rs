@@ -26,9 +26,7 @@ pub struct View {
 
 impl DrawingBoard {
     pub fn new(state: Arc<Mutex<DState>>) -> DrawingBoard {
-        DrawingBoard {
-            state,
-        }
+        DrawingBoard { state }
     }
 
     fn try_draw(&self, canvas: &mut Canvas<Window>, settings: DrawSettings) -> Result<(), String> {
@@ -59,7 +57,6 @@ impl DrawingBoard {
                 };
                 canvas.set_draw_color(Color::RGBA(col.0, col.1, col.2, alpha));
             }
-
 
             if let Some(ro) = state.world.resolve_shape(obj) {
                 match ro {
@@ -106,7 +103,17 @@ impl DrawingBoard {
                     }
                 }
 
-                image.draw(
+                let mut to_draw = &image.normal;
+                if let Some(gwrapper::Visibility::Hidden) =
+                    state.world.visibility.get(&gwrapper::ThingID::PointID(*id))
+                {
+                    if !state.view.show_hidden {
+                        continue;
+                    }
+                    to_draw = &image.transparent;
+                }
+
+                to_draw.draw(
                     canvas,
                     &Position::Center(Point::new(p_px.0 as i32, p_px.1 as i32)),
                     settings,
@@ -122,7 +129,10 @@ impl DrawingBoard {
 
         let state = &mut *self.state.lock().unwrap();
 
-        let mouse_po = state.view.transform.transform_px_to_po((x as f64, y as f64));
+        let mouse_po = state
+            .view
+            .transform
+            .transform_px_to_po((x as f64, y as f64));
 
         state
             .current_tool
@@ -209,7 +219,10 @@ impl Drawable for DrawingBoard {
                     {
                         if let Some(point) = state.world.geometry.points.get_mut(id) {
                             *point = geometry::create_arbitrary(
-                                state.view.transform.transform_px_to_po((x as f64, y as f64)),
+                                state
+                                    .view
+                                    .transform
+                                    .transform_px_to_po((x as f64, y as f64)),
                             );
                         }
                     }
