@@ -5,6 +5,7 @@ use tool::SelectedStatus;
 pub fn default_toolbar(send: Sender<Button>) -> ToolBar {
     let tools = vec![
         (make_selector(send.clone()), icons::TOOL_SELECTOR.clone()),
+        (make_peeker(), icons::TOOL_PEEK.clone()),
         (cb_set_tool(ToolKind::Point), icons::TOOL_POINT.clone()),
         (cb_set_tool(ToolKind::Circle), icons::TOOL_CIRCLE.clone()),
         (cb_set_tool(ToolKind::Line), icons::TOOL_LINE.clone()),
@@ -65,6 +66,16 @@ fn make_vis_changer(status: gwrapper::Visibility) -> MakeButton {
                     state.world.visibility.insert(id, status);
                 }
             }
+        }),
+        select: false,
+        subtoolbar: None,
+    }))
+}
+
+fn make_peeker() -> MakeButton {
+    MakeButton(Box::new(move || Button {
+        function: Box::new(move |state| {
+            state.view.show_hidden = !state.view.show_hidden;
         }),
         select: false,
         subtoolbar: None,
