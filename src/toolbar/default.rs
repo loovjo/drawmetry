@@ -62,7 +62,6 @@ fn make_vis_changer(status: gwrapper::Visibility) -> MakeButton {
         function: Box::new(move |state| {
             for (id, sel) in state.current_tool.selected(&state.world) {
                 if sel == SelectedStatus::Primary {
-                    println!("{:?}ing {:?}", status, id);
                     state.world.visibility.insert(id, status);
                 }
             }
