@@ -5,7 +5,8 @@ use std::sync::{
 };
 
 use backend::gwrapper::GWrapper;
-use drawing_board::DrawingBoard;
+use drawing_board::{DrawingBoard, View};
+use transform::Transform;
 use tool::{Tool, ToolKind};
 use toolbar::{default_toolbar, Button, ToolBar};
 use ytesrev::drawable::KnownSize;
@@ -17,6 +18,7 @@ pub const WINDOW_SIZE: (u32, u32) = (1200, 800);
 pub struct DState {
     pub world: GWrapper,
     pub current_tool: Box<dyn Tool>,
+    pub view: View,
 }
 
 pub struct DScene {
@@ -32,6 +34,16 @@ pub fn create_layout(world: GWrapper) -> DScene {
     let state = DState {
         world: world,
         current_tool: ToolKind::Selector.into_tool(),
+        view: View {
+            transform: Transform::new_from_winsize((
+                WINDOW_SIZE.0 as f64,
+                WINDOW_SIZE.1 as f64,
+            )),
+            mouse_last: Point::new(0, 0),
+            moving_screen: false,
+            scrolling: 0.,
+            show_hidden: true,
+        },
     };
 
     let state_arc_mutex = Arc::new(Mutex::new(state));
