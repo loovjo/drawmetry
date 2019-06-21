@@ -1,8 +1,8 @@
 use ordered_float::NotNan;
 
-use std::iter::IntoIterator;
-
+use std::cell::Cell;
 use std::collections::HashMap;
+use std::iter::IntoIterator;
 use std::ops::Deref;
 
 const EPSILON: f64 = 1e-8;
@@ -99,6 +99,8 @@ impl ResolvedShape {
 pub struct Geometry {
     pub shapes: HashMap<ShapeID, Shape>,
     pub points: HashMap<PointID, Point>,
+
+    point_cache: Cell<HashMap<Point, (f64, f64)>>,
     last_shape: ShapeID,
     last_point: PointID,
 }
@@ -108,6 +110,7 @@ impl Geometry {
         Geometry {
             shapes: HashMap::new(),
             points: HashMap::new(),
+            point_cache: Cell::new(HashMap::new()),
             last_shape: ShapeID(0),
             last_point: PointID(0),
         }
@@ -116,12 +119,16 @@ impl Geometry {
     pub fn add_shape(&mut self, shape: Shape) -> ShapeID {
         let id = self.next_shape_id();
         self.shapes.insert(id, shape);
+        self.invalidate_cache();
+
         id
     }
 
     pub fn add_point(&mut self, point: Point) -> PointID {
         let id = self.next_point_id();
         self.points.insert(id, point);
+        self.invalidate_cache();
+
         id
     }
 
@@ -167,8 +174,19 @@ impl Geometry {
         points
     }
 
+    pub fn invalidate_cache(&mut self) {
+        self.point_cache.take();
+    }
+
     pub fn resolve_point(&self, point: &Point) -> Option<(f64, f64)> {
-        match point {
+        let cache = self.point_cache.take();
+        if let Some(cached) = cache.clone().get(point) {
+            self.point_cache.set(cache);
+            return Some(*cached);
+        }
+        self.point_cache.set(cache);
+
+        let res = match point {
             Point::Arbitrary(pos) => Some((*pos.0, *pos.1)),
             Point::PrimIntersection(a, b) | Point::SecIntersection(a, b) => {
                 let obj_a = self.shapes.get(&a)?;
@@ -238,7 +256,14 @@ impl Geometry {
                     _ => None,
                 }
             }
+        };
+
+        if let Some(pos) = res {
+            let mut cache = self.point_cache.take();
+            cache.insert(*point, pos);
+            self.point_cache.set(cache);
         }
+        res
     }
 
     pub fn resolve_shape(&self, shape: &Shape) -> Option<ResolvedShape> {

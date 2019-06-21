@@ -225,6 +225,7 @@ impl Drawable for DrawingBoard {
                                     .transform_px_to_po((x as f64, y as f64)),
                             );
                         }
+                        state.world.geometry.invalidate_cache();
                     }
                 }
                 state.view.mouse_last = Point::new(x, y);

@@ -2,7 +2,7 @@ pub mod tools;
 
 use backend::gwrapper;
 use drawing_board::View;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 pub trait Tool: Send {
     fn click(&mut self, ctx: &mut gwrapper::GWrapper, view: &mut View, at: (f64, f64));
@@ -32,7 +32,7 @@ impl ToolKind {
             ToolKind::Circle => Box::new(tools::CircleTool { center: None }),
             ToolKind::Line => Box::new(tools::LineTool { edge: None }),
             ToolKind::Mover => Box::new(tools::MoverTool { moving: None }),
-            ToolKind::Selector => Box::new(tools::Selector { selected: vec![] }),
+            ToolKind::Selector => Box::new(tools::Selector { selected: HashSet::new() }),
         }
     }
 }

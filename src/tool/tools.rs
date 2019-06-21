@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::f64;
 
 use super::*;
@@ -134,7 +135,7 @@ impl Tool for MoverTool {
 }
 
 pub struct Selector {
-    pub selected: Vec<gwrapper::ThingID>,
+    pub selected: HashSet<gwrapper::ThingID>,
 }
 
 impl Tool for Selector {
@@ -191,7 +192,11 @@ impl Tool for Selector {
         };
 
         if let Some((_, (id, _))) = get_best(objects, dist_fn) {
-            self.selected.push(id);
+            if self.selected.contains(&id) {
+                self.selected.remove(&id);
+            } else {
+                self.selected.insert(id);
+            }
         }
     }
     fn selected(&self, _ctx: &gwrapper::GWrapper) -> HashMap<gwrapper::ThingID, SelectedStatus> {
